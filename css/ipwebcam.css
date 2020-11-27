@@ -1,0 +1,170 @@
+/* Move down content because we have a fixed navbar that is 50px tall */
+body {
+  padding-top: 50px;
+  padding-bottom: 20px;
+}
+
+img.rec {
+	margin: 0 0.2em 0.18em 0.2em;
+}
+
+
+@media (min-width: 1200px) {
+  span.visible-lg {
+    display: inline !important;
+  }
+}
+
+.jumbotron {
+	font-size: 14px !important;
+}
+
+.video-display {
+	width: 240px;
+	height: 180px;
+	margin: auto;
+	display: block;
+}
+
+.video-image {
+	max-width: 240px;
+	height: auto;
+}
+
+.nopadding {
+	padding-right: 0;
+	padding-left: 0;
+}
+
+@media (max-width: 767px) {
+	.video-display {
+		width: 320px !important;
+		height: 240px !important;
+	}
+	.video-image {
+		max-width: 320px !important;
+		max-width: 240px !important;
+	}
+	
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+	.video-display {
+		width: 512px !important;
+		height: 384px !important;
+	}
+	.video-image {
+		max-width: 512px !important;
+		max-height: 384px !important;
+	}
+}
+
+@media (min-width: 992px) and (max-width: 1199px) {
+	.video-display {
+		width: 768px !important;
+		height: 576px !important;
+	}
+	.video-image {
+		max-width: 768px !important;
+		max-height: 576px !important;
+	}
+}
+
+
+@media (min-width: 1200px) {
+	.video-display {
+		width: 1024px !important;
+		height: 768px !important;
+	}
+	.video-image {
+		max-width: 1024px !important;
+		max-height: 768px !important;
+	
+	display: block;
+	}
+}
+
+#flash_audio {
+	width: 92px;
+	height: 48px;
+}
+
+.dirheader .rm_dir {
+	display: none;
+}
+
+
+.dirheader:hover .rm_dir {
+	display: inline-block;
+	cursor: pointer;
+}
+
+.file .rm_file {
+	display: none;
+}
+
+.file:hover .rm_file {
+	display: inline-block;
+	cursor: pointer;
+}
+
+
+.legendLabel {
+	font-family: sans-serif;
+}
+
+
+/* CSS3 switch from w3schools.com */
+
+.round_switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 34px;
+  margin-bottom: -12px;
+}
+
+.round_switch input {display:none;}
+
+.round_slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  -webkit-transition: .4s;
+  transition: .4s;
+  border-radius: 34px;
+}
+
+.round_slider:before {
+  position: absolute;
+  text-align: center;
+  font-family: 'Glyphicons Halflings';
+  font-size: 12px;
+  content: "\e122";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  -webkit-transition: .4s;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .round_slider {
+  background-color: #2196F3;
+}
+
+input:focus + .round_slider {
+  box-shadow: 0 0 1px #2196F3;
+}
+
+input:checked + .round_slider:before {
+  -webkit-transform: translateX(26px);
+  -ms-transform: translateX(26px);
+  transform: translateX(26px);
+}
