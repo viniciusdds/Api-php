@@ -15,16 +15,22 @@
 		$senha = md5($_REQUEST['senha']);
 	
 	    $db_data = array();
+		//$id = array();
+		
 		$sql = mysqli_query($con,"select * from loginbase.new_usuarios_ag where tb_cpf = '".$usuario."' and tb_senha = '".$senha."'");
 		$rows = mysqli_num_rows($sql);
 		if($rows > 0){
+			$db_data['resp'] = "1";
 			while($result = mysqli_fetch_array($sql)){
 				$db_data[] = $result;
 			}
 			//echo json_encode($db_data);
-			echo "1";
+					
+			echo json_encode($db_data);
 		}else{
-			echo "0";
+			$db_data['resp'] = "0";
+			
+			echo json_encode($db_data);
 		}
 		mysqli_close($con);
 		return;
