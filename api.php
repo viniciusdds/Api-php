@@ -8,6 +8,15 @@
 		die("Falha na conexão: ".mysqli_error($con));
 		return;
 	}
+	
+	
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////  ACESSO PARA A TELA DE LOGIN //////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	if($action == "login"){ 
 	
@@ -15,7 +24,6 @@
 		$senha = md5($_REQUEST['senha']);
 	
 	    $db_data = array();
-		//$id = array();
 		
 		$sql = mysqli_query($con,"select * from loginbase.new_usuarios_ag where tb_cpf = '".$usuario."' and tb_senha = '".$senha."'");
 		$rows = mysqli_num_rows($sql);
@@ -24,7 +32,6 @@
 			while($result = mysqli_fetch_array($sql)){
 				$db_data[] = $result;
 			}
-			//echo json_encode($db_data);
 					
 			echo json_encode($db_data);
 		}else{
@@ -167,8 +174,124 @@
 				//}
 		}else{
 			echo "0";
-		}
+		}		
+	}
+	
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////  ACESSO PARA AS TELAS DE PROCESSOS AG /////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	
+	
+	if($action == "consultarCNPJ"){
+		$cpf = $_REQUEST['cpf'];
+		$perfil = $_REQUEST['perfil'];
 		
+		$db_data = array();
+		$sql = mysqli_query($con,"select  
+									 tb_cnpj,
+									 mid(tb_empresa,1,20) tb_empresa,
+									 tb_nome,
+									 tb_cpf,
+									 tb_email,
+									 tb_nivel_usuario
+								  from loginbase.new_usuarios_ag where tb_cpf = '".$cpf."' and tb_nivel_usuario = '".$perfil."' and tb_ativado = '1'");
+		
+		$rows = mysqli_num_rows($sql);
+		if($rows > 1){			
+			//$db_data['resp'] = "1";
+			while($result = mysqli_fetch_array($sql)){
+				$db_data[] = $result;			
+			}
+			echo json_encode($db_data);
+			
+		}else{
+			$db_data['resp'] = "0";
+			echo json_encode($db_data);
+		}
+	}
+	
+	if($action == "cadastroTransp"){
+		$cnpjCli = $_REQUEST['cnpjCli'];		
+		$cliente = $_REQUEST['cliente'];		
+		$cnpjTrans = $_REQUEST['cnpjTrans'];		
+		$razaoSocial = $_REQUEST['razaoSocial'];		
+		$tipo = $_REQUEST['tipo'];
+
+		$verificaPerfil = mysqli_query($con,"select * from loginbase.new_usuarios_ag where tb_cnpj = '".$cnpjTrans."' and case when ('".$cnpjCli."' = '".$cnpjTrans."' and tb_nivel_usuario = '1') then tb_nivel_usuario = '2' else tb_nivel_usuario = '1' end");
+		$rowsPerfil = mysqli_num_rows($verificaPerfil);
+		if($rowsPerfil == 0){
+			$sql = mysqli_query($con,"select * from sistemas_ag.cad_transp_ag where cnpj_cli = '".$cnpjCli."' and cnpj_transp = '".$cnpjTrans."'");
+			$rows = mysqli_num_rows($sql);
+			if($rows > 0){
+				//JÁ CADASTRADO
+				echo "2";
+			}else{
+				$insert = mysqli_query($con,"insert into sistemas_ag.cad_transp_ag
+										(cnpj_cli,cnpj_transp,razao_social,nome_cli,tipo)
+										   values
+										('".trim($cnpjCli)."','".trim($cnpjTrans)."','".$razaoSocial."','".$cliente."','".$tipo."')
+									  ");
+									  
+				if($insert){
+					//CADASTRADO COM SUCESSO
+					echo "1";
+				}else{
+					//ERRO AO INSERIR
+					echo "0";
+				}
+			}
+			
+		}else{
+			// ESSE CNPJ ESTÁ CADASTRADO COM PERFIL DE CLIENTE
+			echo "3";
+		}			
+	}
+	
+	//Consulta as transportadoras cadastradas
+	if($action == "consultarTransp"){
+		$cnpj = $_REQUEST['cnpj'];
+		
+		$db_data = array();
+		$sql = mysqli_query($con,"select 
+		                            cnpj_cli, 
+									cnpj_transp, 
+									mid(razao_social,1,20) razao_social, 
+									nome_cli, 
+									permissao 
+								  from
+								    sistemas_ag.cad_transp_ag 
+								  where cnpj_cli = '".$cnpj."'
+								  order by time_stamp desc");
+			
+		$rows = mysqli_num_rows($sql);			
+
+		if($rows > 0){			
+			while($result = mysqli_fetch_array($sql)){
+				$db_data[] = $result;
+			}
+			echo json_encode($db_data);
+		}else{
+			echo "0";
+		}
+	}
+	
+	//Flag de permissão de agendamento para transportadoras
+	if($action == "permissao"){
+		$cnpjTrans = $_REQUEST['cnpjTrans'];
+		$cnpjCli = $_REQUEST['cnpjCli'];
+		$permission = $_REQUEST['permission'];
+		
+		$update = mysqli_query($con,"UPDATE `sistemas_ag`.`cad_transp_ag` SET `permissao` = '".$permissao."' WHERE (`cnpj_cli` = '".$cnpjCli."') and (`cnpj_transp` = '".$cnpjTrans."')");
+		
+		if($update){
+			echo "1";
+		}else{
+			echo "0";
+		}
 	}
 		
 ?>
