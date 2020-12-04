@@ -25,7 +25,19 @@
 	
 	    $db_data = array();
 		
-		$sql = mysqli_query($con,"select * from loginbase.new_usuarios_ag where tb_cpf = '".$usuario."' and tb_senha = '".$senha."'");
+		$sql = mysqli_query($con,"select 	
+									 tb_data,
+									 tb_cnpj,
+									 mid(tb_empresa,1,20) tb_empresa,
+									 tb_nome,
+									 tb_cpf,
+									 tb_senha,
+									 tb_email,
+									 tb_ativado,
+									 tb_nivel_usuario,
+									 logado,
+									 tb_solicitacao
+								  from loginbase.new_usuarios_ag where tb_cpf = '".$usuario."' and tb_senha = '".$senha."'");
 		$rows = mysqli_num_rows($sql);
 		if($rows > 0){
 			$db_data['resp'] = "1";
@@ -45,8 +57,8 @@
 	
 	if($action == "cadastro"){
 		
-		$nome    = $_REQUEST['nome'];
-		$empresa = $_REQUEST['empresa'];
+		$nome    = strtoupper($_REQUEST['nome']);
+		$empresa = strtoupper($_REQUEST['empresa']);
 		$cnpj    = $_REQUEST['cnpj'];
 		$documento = $_REQUEST['documento'];
 		$senha  = $_REQUEST['senha'];
@@ -209,16 +221,15 @@
 			echo json_encode($db_data);
 			
 		}else{
-			$db_data['resp'] = "0";
-			echo json_encode($db_data);
+			echo "0";
 		}
 	}
 	
 	if($action == "cadastroTransp"){
 		$cnpjCli = $_REQUEST['cnpjCli'];		
-		$cliente = $_REQUEST['cliente'];		
+		$cliente = strtoupper($_REQUEST['cliente']);		
 		$cnpjTrans = $_REQUEST['cnpjTrans'];		
-		$razaoSocial = $_REQUEST['razaoSocial'];		
+		$razaoSocial = strtoupper($_REQUEST['razaoSocial']);		
 		$tipo = $_REQUEST['tipo'];
 
 		$verificaPerfil = mysqli_query($con,"select * from loginbase.new_usuarios_ag where tb_cnpj = '".$cnpjTrans."' and case when ('".$cnpjCli."' = '".$cnpjTrans."' and tb_nivel_usuario = '1') then tb_nivel_usuario = '2' else tb_nivel_usuario = '1' end");
@@ -233,7 +244,7 @@
 				$insert = mysqli_query($con,"insert into sistemas_ag.cad_transp_ag
 										(cnpj_cli,cnpj_transp,razao_social,nome_cli,tipo)
 										   values
-										('".trim($cnpjCli)."','".trim($cnpjTrans)."','".$razaoSocial."','".$cliente."','".$tipo."')
+										('".trim($cnpjCli)."','".trim($cnpjTrans)."','".strtoupper($razaoSocial)."','".strtoupper($cliente)."','".$tipo."')
 									  ");
 									  
 				if($insert){
@@ -283,15 +294,116 @@
 	if($action == "permissao"){
 		$cnpjTrans = $_REQUEST['cnpjTrans'];
 		$cnpjCli = $_REQUEST['cnpjCli'];
-		$permission = $_REQUEST['permission'];
+		$flag = $_REQUEST['flag'];
 		
-		$update = mysqli_query($con,"UPDATE `sistemas_ag`.`cad_transp_ag` SET `permissao` = '".$permissao."' WHERE (`cnpj_cli` = '".$cnpjCli."') and (`cnpj_transp` = '".$cnpjTrans."')");
+		$update = mysqli_query($con,"UPDATE `sistemas_ag`.`cad_transp_ag` SET `permissao` = '".$flag."' WHERE (`cnpj_cli` = '".$cnpjCli."') and (`cnpj_transp` = '".$cnpjTrans."')");
 		
 		if($update){
 			echo "1";
 		}else{
 			echo "0";
 		}
+	}
+	
+	//Remove a transportadora cadastrada
+	if($action == "removerTransp"){
+		$cnpjCli = $_REQUEST['cnpjCli'];
+		$cnpjTransp = $_REQUEST['cnpjTransp'];
+		
+		$delete = mysqli_query($con,"DELETE FROM `sistemas_ag`.`cad_transp_ag` WHERE (`cnpj_cli` = '".$cnpjCli."') and (`cnpj_transp` = '".$cnpjTransp."')");
+		
+		if($delete){
+			echo "1";
+		}else{
+			echo "0";
+		}
+	}
+	
+	//Altera a senha
+	if($action == "alteraSenha"){
+		$email = $_REQUEST['email'];
+		$cpf = $_REQUEST['cpf'];
+		$senha = $_REQUEST['senha'];
+		$password = md5($senha);
+		
+		$update = mysqli_query($con, "UPDATE loginbase.new_usuarios_ag SET tb_senha = '".$password."', senha_decrypt = '".$senha."' WHERE  tb_cpf = '".$cpf."'");
+		
+		if($update){
+			echo "1";
+		}else{
+			echo "0";
+		}
+	}
+	
+	//Adiciona CNPJ no cadastro
+	if($action == "addCnpj"){
+		$cnpj = $_REQUEST['cnpj'];
+		$cpf = $_REQUEST['cpf'];
+		$nome = strtoupper($_REQUEST['nome']);
+		$empresa = strtoupper($_REQUEST['empresa']);
+		$email = $_REQUEST['email'];
+		$perfil = $_REQUEST['perfil'];
+		
+		$origin = array('/','.','-');
+		$destiny = array('','','');
+		
+		//Verifica se já tem cadastro com outro perfil
+		$verifyPER = mysqli_query($con,"select * from loginbase.new_usuarios_ag where tb_cnpj = '".str_replace($origin,$destiny,$cnpj)."' and tb_nivel_usuario != '".$perfil."'");
+		
+		//Verifica se já tem cadastro 		
+		$verifyCPF = mysqli_query($con,"select * from loginbase.new_usuarios_ag where tb_cnpj = '".str_replace($origin,$destiny,$cnpj)."' and tb_cpf = '".$cpf."'");
+		
+		$rowsPER = mysqli_num_rows($verifyPER);
+		$rowsCPF = mysqli_num_rows($verifyCPF);
+		
+		if($rowsCPF == 0 && $rowsPER == 0){
+			$sql = "INSERT INTO loginbase.new_usuarios_ag 
+				(
+					tb_cnpj,
+					tb_empresa,
+					tb_nome,
+					tb_cpf,
+					tb_nivel_usuario,
+					tb_email,
+					tb_senha,
+					senha_decrypt,
+					tb_ativado,
+					adicionado
+				) 
+				SELECT 
+					'".str_replace($origin,$destiny,$cnpj)."', 
+					'".$empresa."', 
+					'".$nome."', 
+					'".$cpf."', 
+                    '".$perfil."',
+					'".$email."', 
+					tb_senha, 
+					senha_decrypt,
+					'0',
+					'Y'
+				FROM loginbase.new_usuarios_ag 
+				where tb_cpf = '".$cpf."' 
+				and tb_nivel_usuario = '".$perfil."'
+				on duplicate key update tb_cnpj = '".str_replace($origin,$destiny,$cnpj)."', tb_empresa = '".$empresa."',
+				tb_nivel_usuario = '".$perfil."'";
+				
+				$insert = mysqli_query($con, $sql);
+				if($insert){
+					//CADASTRADO COM SUCESSO
+					echo "1";
+				}else{
+					//ERRO AO INSERIR
+					echo "0";
+				}
+		}else{
+			if($rowsPER > 0){
+				//JÁ CADASTRADO	
+				echo "2";
+			}else{
+				echo "3";
+			}
+		}
+		
 	}
 		
 ?>
