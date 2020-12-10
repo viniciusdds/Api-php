@@ -492,137 +492,122 @@
 						$qtotal->execute();
 						$total = $qtotal->fetch();	
 						
-						//Verifico quantas linhas ainda restão na base Mysql
-						$countEstoque = mysqli_query($con,"SELECT * FROM sistemas_ag.clientes_ag where nota_fiscal = '".$row['NOTA_FISCAL']."' and produto = '".$row['PRODUTO']."' group by num_pedido")or die("erro no select countEstoque");
-						$EstoqueLine = mysqli_num_rows($countEstoque);
 						
-						//Consulta as UZ em estoque
+						
 						$verificaUZ = mysqli_query($con,"select palete, pedido from sistemas_ag.clientes_ag where palete = '".trim($row['UZ'])."'")or die("erro no select verifica UZ");
 						$linhasUZ = mysqli_num_rows($verificaUZ);
 						$pedidoUZ = mysqli_fetch_array($verificaUZ);
-						
+							
 						//Verifico se já foi quebrado a quantidade que estava em palete
 						if($linhasUZ > 0){
 							$clausula = " and a.palete = '".trim($row['UZ'])."' ";	
 						}else{
 							$clausula = " and  a.palete = '--' "; 
 						}
-						$groupBy = "group by a.palete,troca";
-						
+						$groupBy = "group by a.palete";
+							
 						//Verifica se tem algum registro no banco
-						$teste = mysqli_query($con,"select 
-														sum(pedido) as pedidos,
-														qtd_disp disp,
-														pedido,
-														qtd_disp - sum(pedido) sobra,
-														palete,
-														troca,
-														case when qtd_diff is not null then
-														
-														case when sum(qtd_diff) > sum(pedido) 
-															then 
-																(sum(qtd_diff)-sum(pedido))
-															when  sum(qtd_diff) < sum(pedido) 
-															then 
-																(sum(pedido)-sum(qtd_diff)) 
-															else 
-																(select qtd_diff from sistemas_ag.clientes_ag where nota_fiscal = a.nota_fiscal and produto = a.produto and lote = a.lote and qtd_diff is not null order by time_stamp desc limit 1)
-															end
-														else
-															0
-														end qtd_diff,
-														
-														
-														case when palete = '".$row['UZ']."' then	
-															case when pedido < ".$row['QTD']." and palete = '".$row['UZ']."'
-															then
-																1
+							$teste = mysqli_query($con,"select 
+															sum(pedido) as pedidos,
+															qtd_disp disp,
+															pedido,
+															qtd_disp - sum(pedido) sobra,
+															palete,
+															troca,
+															case when qtd_diff is not null then
+															
+															case when sum(qtd_diff) > sum(pedido) 
+																then 
+																	(sum(qtd_diff)-sum(pedido))
+																when  sum(qtd_diff) < sum(pedido) 
+																then 
+																	(sum(pedido)-sum(qtd_diff)) 
+																else 
+																	(select qtd_diff from sistemas_ag.clientes_ag where nota_fiscal = a.nota_fiscal and produto = a.produto and lote = a.lote and qtd_diff is not null order by time_stamp desc limit 1)
+																end
 															else
 																0
-															end
-														else
-															0
-														end testando,
-														qtd_por_uz,
-														count(*) as linhas
-													from sistemas_ag.clientes_ag a 
-														where
-														nota_fiscal = '".trim($row['NOTA_FISCAL'])."' and lote_serial = '".trim($row['LOTE_SERIAL'])."' 
-														and a.produto = '".trim($row['PRODUTO'])."' and a.lote = '".trim($row['LOTE'])."' ".$clausula." 
-														")or die("erro no select coleta cliente mysql q total");
-									
-						$rows = mysqli_num_rows($teste);
-						
-						//Aqui eu pego os valores acumulados na base Mysql para decrementar com os valores vindos do estoque, desconsiderando os valores pedido por PP
-						$acumulados = mysqli_query($con,"select 
-															sum(pedido) total,
-															count(*) cont,
-															(select qtd_diff from sistemas_ag.clientes_ag where nota_fiscal = a.nota_fiscal and produto = a.produto and lote = a.lote order by time_stamp desc limit 1) diff
-														  from sistemas_ag.clientes_ag a
-															where nota_fiscal = '".$row['NOTA_FISCAL']."'
-															and produto = '".$row['PRODUTO']."'
-															and lote = '".$row['LOTE']."'
-															and pedido != qtd_por_uz");
-						$acumulado = mysqli_fetch_array($acumulados);
-						
-						//Aqui Verifico quais pedido foram pedidos por quantidade PP
-						$EstoqueUZ = mysqli_query($con,"select palete from sistemas_ag.clientes_ag where nota_fiscal = '".$row['NOTA_FISCAL']."' and produto = '".$row['PRODUTO']."' and lote = '".$row['LOTE']."' and pedido = qtd_por_uz");
-						
-						//Trata os valores que foram pedidos avulsos na tela quantidade disponivel em estoque para quebrar a quantidade em UZs
+															end qtd_diff,
+															
+															
+															case when palete = '".$row['UZ']."' then	
+																case when pedido < ".$row['QTD']." and palete = '".$row['UZ']."'
+																then
+																	1
+																else
+																	0
+																end
+															else
+																0
+															end testando,
+															qtd_por_uz,
+															count(*) as linhas
+														from sistemas_ag.clientes_ag a 
+															where
+															nota_fiscal = '".trim($row['NOTA_FISCAL'])."' and lote_serial = '".trim($row['LOTE_SERIAL'])."' 
+															and a.produto = '".trim($row['PRODUTO'])."' and a.lote = '".trim($row['LOTE'])."' ".$clausula."
+															")or die("erro no select coleta cliente mysql q total");
+							
+							
+							$rows = mysqli_num_rows($teste);
+							$acumulados = mysqli_query($con,"select 
+																sum(pedido) total,
+																count(*) cont,
+																(select qtd_diff from sistemas_ag.clientes_ag where nota_fiscal = a.nota_fiscal and produto = a.produto and lote = a.lote order by time_stamp desc limit 1) diff
+															  from sistemas_ag.clientes_ag a
+																where nota_fiscal = '".$row['NOTA_FISCAL']."'
+																and produto = '".$row['PRODUTO']."'
+																and lote = '".$row['LOTE']."'
+																and pedido != qtd_por_uz")or die("erro no select acumulados");
+							$acumulado = mysqli_fetch_array($acumulados);
+							
+							$EstoqueUZ = mysqli_query($con,"select palete from sistemas_ag.clientes_ag where nota_fiscal = '".$row['NOTA_FISCAL']."' and produto = '".$row['PRODUTO']."' and lote = '".$row['LOTE']."' and pedido = qtd_por_uz")or die("erro no select EstoqueUZ");
+							
+																
+							$rows = mysqli_num_rows($teste);
 							if($rows > 0){
 								$valor = mysqli_fetch_array($teste);
 								extract($valor);
+									 
+								if(!$pedidos){
+									$pedidos = 0;
+									$estoque = 0;
+									$palete = 0;
+								}
 								
-								
-								$test = array();
+								$test = array();								
 								while($countUZ = mysqli_fetch_array($EstoqueUZ)){
 									$test[] = $countUZ['palete'];
 								}
 								
-									
-														
-								if(!in_array($row['UZ'],$test)){	
+								if(substr($cub['CUBAGEM'],0,1) == ","){
+									$cubagem = "0".$cub['CUBAGEM'];
+								}else{
+									$cubagem = $cub['CUBAGEM'];
+								}
+								
+								if(!in_array($row['UZ'],$test)){
 									$arr[] = $row['NOTA_FISCAL'];
 									$teste = array_count_values($arr);
 									foreach($teste as $v1){
 									}	
-											
-											
+												
+												
 									if($v1 == 1){
-										$estoque = $row['QTD'] - $acumulado['total'];		
-									}else{	
+										$estoque = $row['QTD'] - $acumulado['total'];
+									}else{		
 										if($estoque < 0){
 											$estoque = $row['QTD'] + $estoque;
 										}else{	
 											$estoque = $row['QTD'];
-										}
+										}										
 									}
-								}
-							}else{
-								$pedidos = 0;
-								$palete = 0;
-								$estoque = $row['QTD'];	
-							}
-							
-							if($total['TOTAL'] != $pedidos){
-								//Verifica se a quantidade existe em estoque
-								if(round($estoque) <= 0 || in_array($row['UZ'],$test)){
-									$insert = false;	
-								}else{			
 									
-									if(substr($cub['CUBAGEM'],0,1) == ","){
-										$cubagem = str_replace(",",".","0".$cub['CUBAGEM']);
-									}else{
-										$cubagem = str_replace(",",".",$cub['CUBAGEM']);
-									}
-												
-									if($cubagem){
-										$cubagem = $cubagem;
-									}else{
-										$cubagem = 'PP';
-									}	
-									
-									$insert = mysqli_query($con,"insert into sistemas_ag.lista_pedidos_ag 
+									//echo "".trim($row['NOTA_FISCAL'])." - ".trim($row['LOTE_SERIAL'])." - ".trim($row['PRODUTO'])." - ".round($estoque)." - ".trim($row['LOTE'])." - ".utf8_encode(trim($row['MEDIDA']))." - ".$cnpj." - ".trim($row['UZ'])." - ".$cubagem." - ".trim($total['TOTAL'])." <br>";
+
+
+									if($estoque > 0){
+										$insert = mysqli_query($con,"insert into sistemas_ag.lista_pedidos_ag 
 																 (
 																	nota_fiscal,
 																	lote_serial,
@@ -632,7 +617,9 @@
 																	unid_medida,
 																	cnpj,
 																	palete,
-																	cubagem
+																	cubagem,
+																	qtd_total,
+																	qtd_uz
 																 )
 																 values
 																 (
@@ -644,7 +631,9 @@
 																	'".utf8_encode(trim($row['MEDIDA']))."',
 																	'".$cnpj."',
 																	'".trim($row['UZ'])."',
-																	".$cubagem."
+																	".str_replace(",",".",$cubagem).",
+																	".trim($total['TOTAL']).",
+																	".$row['QTD']."
 																 ) on duplicate key update 
 																	  nota_fiscal = '".trim($row['NOTA_FISCAL'])."',
 																	  lote_serial = '".trim($row['LOTE_SERIAL'])."',
@@ -652,21 +641,12 @@
 																	  qtd_disp = ".round($estoque).",
 																	  lote = '".trim($row['LOTE'])."',
 																	  unid_medida = '".utf8_encode(trim($row['MEDIDA']))."',
-																	  cubagem = ".$cubagem."");
+																	  cubagem = ".str_replace(",",".",$cubagem)."")or die(mysqli_error($con));						
+									}			
 								}
-								
-								
-								
-								
 							}
-							
-							
-																	  
-																	  
-					//echo "".trim($row['NOTA_FISCAL'])." - ".trim($row['LOTE_SERIAL'])." - ".trim($row['PRODUTO'])." - ".round($estoque)." - ".trim($row['LOTE'])." - ".utf8_encode(trim($row['MEDIDA']))." - ".$cnpj." - ".trim($row['UZ'])." - ".$cubagem."";									  
-																	  
-						
-					} // fim do while
+														
+					    } // fim do while
 		}else{
 			$insert = false;
 		}
@@ -681,6 +661,127 @@
 		}else{
 			echo "0";
 		}
+	}
+	
+	//Aqui faz o cadastro dos pedidos
+	if($action == "cadastrarPedido"){
+		$nota_fiscal = $_REQUEST['nota_fiscal'];
+		$lote_serial = $_REQUEST['lote_serial'];
+		$produto = $_REQUEST['produto'];
+		$qtd_disp = $_REQUEST['qtd_disp'];
+		$lote = $_REQUEST['lote'];
+		$unidade = $_REQUEST['unidade'];
+		$cnpj = $_REQUEST['cnpj'];
+		$cubagem = $_REQUEST['cubagem'];
+		$palete = $_REQUEST['palete'];
+		$auth = $_REQUEST['auth'];
+		$empresa = $_REQUEST['empresa'];
+		
+		
+		$stid = $conAG->query("select  
+								distinct k.entow_id ID_CLIENTE,
+								c.entdf_dsc NAME,
+								k.entow_ent_id CNPJ,
+								ad.entdfb_str END,
+								ad.entdfb_nb NUMERO,
+								ad.entdfb_zip CEP,
+								ad.entdfb_dst BAIRRO,
+								t.entdfc_tel1 TEL,
+								ad.entdfb_city_nm CIDADE,
+								t.entdfc_email1 EMAIL
+							from entow k, entdfb ad, ENTDF c, entdfc t
+							where k.entow_ent_id = ad.entdfb_ent_id
+							and k.entow_ent_id = t.entdfc_ent_id
+							and k.entow_ent_id = c.entdf_id 
+							and k.entow_ent_id = '".$cnpj."'");
+
+	
+		$stid->execute();			
+		$row = $stid->fetch();
+		$client_id = $row['ID_CLIENTE'];
+		$email_cli = $row['EMAIL'];
+		$end_cli = $row['END'];
+		$numero_cli = $row['NUMERO'];
+		$bairro_cli = $row['BAIRRO'];
+		$tel_cli = $row['TEL'];
+		$cep_cli = $row['CEP'];
+		$cidade_cli = $row['CIDADE'];
+		
+		
+		$alias = str_replace(" ","",$empresa);
+		$name = substr($alias,0,6);
+	
+		$insert = mysqli_query($con,"insert into sistemas_ag.num_pedido (id,prefixo) values (1,'$name') on duplicate key update id = id + 1");
+		
+		if($insert){
+			$sql = mysqli_query($con,"select id, prefixo from sistemas_ag.num_pedido where prefixo = '".$name."' order by id desc limit 1");
+			$valores = mysqli_fetch_array($sql);
+			$id = $valores['id'];
+			$prefix = $valores['prefixo'];
+			
+			$num_pedido = $prefix.$id;
+			
+				$cadastrar = mysqli_query($con,"insert into sistemas_ag.clientes_ag 
+																(
+																	num_pedido,
+																	nota_fiscal,
+																	lote_serial,
+																	produto,
+																	qtd_disp,
+																	lote,
+																	unid_medida,
+																	pedido,
+																	nome_cli,
+																	cnpj,
+																	endereco,
+																	numero,
+																	bairro,
+																	cep_cli,
+																	cidade,
+																	cod_id,
+																	email_cli,
+																	tel_cli,
+																	palete,
+																	cubagem,
+																	auth,
+																	qtd_por_uz
+																) 
+																values 
+																(
+																	'".$num_pedido."',
+																	'".$nota_fiscal."',
+																	'".$lote_serial."',
+																	'".$produto."',
+																	 ".$qtd_disp.",
+																	'".$lote."',
+																	'".$unidade."',
+																	'".$qtd_disp."',
+																	'".$empresa."',
+																	'".$cnpj."',
+																	'".$end_cli."',
+																	'".$numero_cli."',
+																	'".$bairro_cli."',
+																	'".$cep_cli."',
+																	'".$cidade_cli."',
+																	".$client_id.",
+																	'".$email_cli."',
+																	'".$tel_cli."',
+																	'".$palete."',
+																	".$cubagem.",
+																	".$auth.",
+																	".$qtd_disp."
+																)");
+			
+				if($cadastrar){
+					$limpar = mysqli_query($con,"delete from sistemas_ag.lista_pedidos_ag");
+					echo "1";
+				}else{
+					echo "0";
+				}
+		}else{
+			echo "2";
+		}
+		
 		
 	}
 	
