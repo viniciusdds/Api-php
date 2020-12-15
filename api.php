@@ -642,7 +642,7 @@
 																	  lote = '".trim($row['LOTE'])."',
 																	  unid_medida = '".utf8_encode(trim($row['MEDIDA']))."',
 																	  cubagem = ".str_replace(",",".",$cubagem)."")or die(mysqli_error($con));						
-									}			
+									}										
 								}
 							}
 														
@@ -651,7 +651,7 @@
 			$insert = false;
 		}
 		
-		if($insert){
+		if(isset($insert)){
 			$db_data = array();
 			$myInfo = mysqli_query($con,"SELECT * FROM sistemas_ag.lista_pedidos_ag where cnpj = '".$cnpj."' and (nota_fiscal like '%$busca%' or produto like '%$busca%' or lote like '%$busca%')");
 			while($response = mysqli_fetch_array($myInfo)){
@@ -779,6 +779,7 @@
 			
 				if($cadastrar){
 					$limpar = mysqli_query($con,"delete from sistemas_ag.lista_pedidos_ag");
+					$removerDunble = mysqli_query($con,"delete a from sistemas_ag.clientes_ag a, sistemas_ag.clientes_ag b where a.counter < b.counter and a.palete = b.palete and a.nota_fiscal = '".$nota_fiscal."'");
 					echo "1";
 				}else{
 					echo mysqli_error($con);
