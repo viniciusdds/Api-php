@@ -720,31 +720,36 @@
 			$prefix = $valores['prefixo'];
 			
 			$num_pedido = $prefix.$id;
+			//echo $client_id." - ".$nota_fiscal." - ".$lote_serial." - ".$produto." - ".$qtd_disp." - ".$lote." - ".$unidade." - ".$cnpj." - ".$cubagem." - ".$palete." - ".$email_cli." - ".$end_cli." - ".$numero_cli." - ".$bairro_cli." - ".$tel_cli." - ".$cep_cli." - ".$cidade_cli;
 			
-				$cadastrar = mysqli_query($con,"insert into sistemas_ag.clientes_ag 
+		$auth = $_REQUEST['auth'];
+		$empresa = $_REQUEST['empresa'];;
+			
+			
+				$cadastrar = mysqli_query($con,"insert into `sistemas_ag`.`clientes_ag` 
 																(
-																	num_pedido,
-																	nota_fiscal,
-																	lote_serial,
-																	produto,
-																	qtd_disp,
-																	lote,
-																	unid_medida,
-																	pedido,
-																	nome_cli,
-																	cnpj,
-																	endereco,
-																	numero,
-																	bairro,
-																	cep_cli,
-																	cidade,
-																	cod_id,
-																	email_cli,
-																	tel_cli,
-																	palete,
-																	cubagem,
-																	auth,
-																	qtd_por_uz
+																	`num_pedido`,
+																	`nota_fiscal`,
+																	`lote_serial`,
+																	`produto`,
+																	`qtd_disp`,
+																	`lote`,
+																	`unid_medida`,
+																	`pedido`,
+																	`nome_cli`,
+																	`cnpj`,
+																	`endereco`,
+																	`numero`,
+																	`bairro`,
+																	`cep_cli`,
+																	`cidade`,
+																	`cod_id`,
+																	`email_cli`,
+																	`tel_cli`,
+																	`palete`,
+																	`cubagem`,
+																	`auth`,
+																	`qtd_por_uz`
 																) 
 																values 
 																(
@@ -755,7 +760,7 @@
 																	 ".$qtd_disp.",
 																	'".$lote."',
 																	'".$unidade."',
-																	'".$qtd_disp."',
+																	".$qtd_disp.",
 																	'".$empresa."',
 																	'".$cnpj."',
 																	'".$end_cli."',
@@ -776,8 +781,9 @@
 					$limpar = mysqli_query($con,"delete from sistemas_ag.lista_pedidos_ag");
 					echo "1";
 				}else{
-					echo "0";
+					echo mysqli_error($con);
 				}
+			
 		}else{
 			echo "2";
 		}
