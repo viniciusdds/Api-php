@@ -648,7 +648,7 @@
 														
 					    } // fim do while
 		}else{
-			$insert = false;
+			$insert = "";
 		}
 		
 		if(isset($insert)){
@@ -663,7 +663,7 @@
 		}
 	}
 	
-	//Aqui faz o cadastro dos pedidos
+	//Aqui faz o cadastro dos pedidos por paletes
 	if($action == "cadastrarPedido"){
 		$nota_fiscal = $_REQUEST['nota_fiscal'];
 		$lote_serial = $_REQUEST['lote_serial'];
@@ -787,9 +787,272 @@
 			
 		}else{
 			echo "2";
+		}	
+	}
+	
+	//Pesquisa itens por quantidade
+	if($action == "pesquisaSaldo"){
+		$busca = $_REQUEST['busca'];
+		$cnpj = $_REQUEST['cnpj'];
+		
+		$pesq = $conAG->query("select 
+									dados.NOTA_FISCAL,
+									dados.LOTE_SERIAL,
+									dados.PRODUTO,
+									dados.QTD,
+									dados.LOTE,
+									dados.MEDIDA
+								from 
+								(select 
+								  trunc(sum(q.mng_frei) + sum(q.MNG_RES_AUF)) QTD, 
+								  q.id_artikel PRODUTO, 
+								  q.nr_lieferschein NOTA_FISCAL,
+								  q.charge LOTE_SERIAL,
+								  q.TRENN_1 LOTE,
+								  p.prddf_mun MEDIDA
+								from quanten q, PRDDF p, entow e 
+								WHERE q.id_artikel = p.prddf_id
+								and q.id_klient = e.entow_id
+								and (q.nr_lieferschein like '%$busca%'
+								or q.id_artikel like '%$busca%'
+								or q.TRENN_1 like '%$busca%')
+								and e.entow_cll_cnpj = ".$cnpj."
+								and rownum <= 1000
+								group by q.id_artikel,q.nr_lieferschein,q.charge,q.TRENN_1,p.prddf_mun order by q.nr_lieferschein) dados");
+								
+		
+		$id = 0;
+		while ($row = $pesq->fetch()) {	
+			$id = $id+1;
+			
+			$condition = $conAG->query("select distinct a.vol CUBAGEM from ARTVPE a where a.typ_le != 'PP' and a.id_artikel = '".trim($row['PRODUTO'])."'");
+			$condition->execute();
+			$cub = $condition->fetch();
+			
+			//Verifica o estoque por quantidade
+			$teste = mysqli_query($con,"select 
+											sum(pedido) as pedidos,
+											max(qtd_composto) qtd_composto
+										from sistemas_ag.clientes_ag a 
+											where
+											 nota_fiscal = '".trim($row['NOTA_FISCAL'])."' and lote_serial = '".trim($row['LOTE_SERIAL'])."' 
+											 and a.produto = '".trim($row['PRODUTO'])."' and a.lote = '".trim($row['LOTE'])."' 
+											 and (a.palete like '%%' or a.palete = '--') 
+											group by nota_fiscal,lote_serial,a.produto")or die("erro no select coleta cliente mysql");
+			$rows = mysqli_num_rows($teste);
+			
+			$composto = $conAG->query("select c.id_artifath COMPOSTO  from comp_prod c where c.id_artifrag = '".trim($row['PRODUTO'])."' group by c.id_artifath");	
+			$composto->execute();
+			$results = $composto->fetch();			
+			
+			
+			$item = $conAG->query("select c.id_artifrag ITEM, c.mng_best_org QTD  from comp_prod c where c.id_artifath = '".trim($results['COMPOSTO'])."'");
+			$item->execute();
+			$qt_kit = $item->fetch();
+				
+			if($rows > 0){
+				$valor = mysqli_fetch_array($teste);
+				extract($valor);
+				
+				$total_disp = $row['QTD'] * $qt_kit['QTD'];
+				
+				if($qt_kit['QTD'] > 1){
+					if($total_disp == $pedidos){
+						
+						$estoque = 0;
+					}else{
+						$reprod = round($pedidos/$qt_kit['QTD']);
+						$estoque = ($row['QTD'] - $reprod);
+					}
+				}else{
+					$estoque = ($row['QTD'] - $pedidos);
+				}
+					
+			}else{
+				$estoque = $row['QTD'];
+			}
+			
+			
+			$arr1[] = $row['NOTA_FISCAL'];
+			$not1 = array_count_values($arr1);
+			foreach($not1 as $n1){
+			}
+			
+			$arr2[] = $row['PRODUTO'];
+			$not2 = array_count_values(array_unique($arr2));
+			foreach($not2 as $n2){
+			}
+			
+			$arr3[] = $row['LOTE'];
+			$not3 = array_count_values($arr3);
+			foreach($not3 as $n3){
+			}
+			
+			if(round($estoque) <= 0){
+					echo "";	
+			}else{
+				$aviso = 1;
+				$composto->execute();
+				$teste = $composto->fetchAll();
+				$lines = count($teste);
+					
+				if($lines > 0){
+					$composto->execute();
+					$result = $composto->fetch();
+					
+					if($n1 == 1 && $n2 == 1 && $n3 == 1){
+						$items = $conAG->query("select c.id_artifrag ITEM, c.mng_best_org QTD  from comp_prod c where c.id_artifath = '".trim($result['COMPOSTO'])."'");
+						$items->execute();
+						$teste2 = $items->fetchAll();
+						$linhas = count($teste2);
+						$items->execute();
+						
+						$cont = 0;
+						while ($kit = $items->fetch()) {	
+							$cont = $cont + 1;
+							
+							$guardar_item = mysqli_query($con,"insert into sistemas_ag.itens_composto (composto,itens,nota,serial,lote,qtd,unidade,id,palete,cubagem) 
+																	values 
+																	('".trim($result['COMPOSTO'])."','".trim($kit['ITEM'])."','".trim($row['NOTA_FISCAL'])."','".trim($row['LOTE_SERIAL'])."','".trim($row['LOTE'])."',".trim($row['QTD']).",'".utf8_encode(trim($row['MEDIDA']))."','".$id."','--','".$cub['CUBAGEM']."')
+																	on duplicate key update nota = '".trim($row['NOTA_FISCAL'])."', serial = '".trim($row['LOTE_SERIAL'])."', qtd = ".trim($row['QTD']).", unidade = '".utf8_encode(trim($row['MEDIDA']))."', cubagem='".$cub['CUBAGEM']."'");
+						}	
+						
+						$verificaEstoque = mysqli_query($con,"select 
+																max(qtd_composto) QTD 
+															  from sistemas_ag.clientes_ag where nota_fiscal = '".trim($row['NOTA_FISCAL'])."' order by time_stamp desc limit 1")or die("erro no select verificaEstoque");
+						
+						$compostoEstoque = mysqli_fetch_array($verificaEstoque);						
+							
+						if($compostoEstoque['QTD']){
+							$qtd_composto = $compostoEstoque['QTD'];
+						}else{
+							$qtd_composto = 0;
+						}
+						
+						//echo trim($result['COMPOSTO'])."<br>";
+						$docit = $conAG->query("select 
+													   doc.dochd_doc_prc_id,
+													   case when s.sfcab_avl_bal_qt is null then di.docit_qt - $qtd_composto else s.sfcab_avl_bal_qt - $qtd_composto  end QTD, 
+													   doc.dochd_doc_id NF_ENTRADA, 
+													   doc.dochd_doc_id ITEM_PAI
+													from sfcab s right join dochd doc
+													on s.sfcab_doc_prc_id = doc.dochd_doc_prc_id
+													inner join docit di
+													on doc.dochd_doc_prc_id = di.docit_doc_prc_id
+													where doc.dochd_doc_id = '".$row['NOTA_FISCAL']."'
+													and di.docit_cd = '".trim($result['COMPOSTO'])."'
+													group by 
+													s.sfcab_avl_bal_qt, 
+													doc.dochd_doc_id, 
+													doc.dochd_doc_id,
+													di.docit_qt,
+													doc.dochd_doc_prc_id");
+						$docit->execute();
+						$qtdComposto = $docit->fetch();
+						
+						if($qtdComposto['QTD'] == 0){
+							echo "";
+						}else{
+								//Recurepar os componentes do composto
+								$items = $conAG->query("select c.id_artifrag ITEM, c.einh_mng_org MEDIDA, c.mng_best_org QTD  from comp_prod c where c.id_artifath = '".$composto."'");
+								$items->execute();
+								
+								$i = 0;
+								while($kit = $items->fetch()) {	
+									$i = $i + 1;
+									
+									//Insert de composto
+									$insertC = mysqli_query($con,"INSERT INTO `sistemas_ag`.`lista_composto_ag` 
+																(
+																	`nota_fiscal`,
+																	`lote_serial`,
+																	`composto`,
+																	`lote`,
+																	`unidade_medida`,
+																	`cnpj`,
+																	`cubagem`,
+																	`qtd_total`
+																) 
+																VALUES 
+																(
+																	'".trim($row['NOTA_FISCAL'])."',
+																	'".trim($row['LOTE_SERIAL'])."',
+																	'".trim($result['COMPOSTO'])."',
+																	'".$loteComp['LOTE']."',
+																	'".utf8_encode(trim($row['MEDIDA']))."',
+																	'".$cnpj."',
+																	".str_replace(",",".",$cub['CUBAGEM']).",
+																	".$qtdComposto['QTD'].",
+																)on duplicate key update 
+																	  nota_fiscal = '".trim($row['NOTA_FISCAL'])."',
+																	  lote_serial = '".trim($row['LOTE_SERIAL'])."',
+																	  composto = '".trim($row['PRODUTO'])."',
+																	  qtd_total = ".$qtdComposto['QTD'].",
+																	  lote = '".trim($row['LOTE'])."',
+																	  unidade_medida = '".utf8_encode(trim($row['MEDIDA']))."',
+																	  cubagem = ".str_replace(",",".",$cub['CUBAGEM'])."")or die(mysqli_error($con));
+								}
+							}
+						}
+				}else{
+					if(substr($cub['CUBAGEM'],0,1) == ","){
+						$cubagem = "0".$cub['CUBAGEM'];
+					}else{
+						$cubagem = $cub['CUBAGEM'];
+					}
+					
+						//Insert de quantidade
+						$insertU = mysqli_query($con,"INSERT INTO `sistemas_ag`.`lista_qtd_ag` 
+																(
+																	`nota_fiscal`,
+																	`lote_serial`,
+																	`produto`,
+																	`lote`,
+																	`unid_medida`,
+																	`cnpj`,
+																	`cubagem`,
+																	`qtd_total`
+																) 
+																VALUES 
+																(
+																	'".trim($row['NOTA_FISCAL'])."',
+																	'".trim($row['LOTE_SERIAL'])."',
+																	'".trim($row['PRODUTO'])."',
+																	'".trim($row['LOTE'])."',
+																	'".utf8_encode(trim($row['MEDIDA']))."',
+																	'".$cnpj."',
+																	".str_replace(",",".",$cubagem).",
+																	".round($estoque)."
+																)on duplicate key update 
+																	  nota_fiscal = '".trim($row['NOTA_FISCAL'])."',
+																	  lote_serial = '".trim($row['LOTE_SERIAL'])."',
+																	  produto = '".trim($row['PRODUTO'])."',
+																	  qtd_total = ".round($estoque).",
+																	  lote = '".trim($row['LOTE'])."',
+																	  unid_medida = '".utf8_encode(trim($row['MEDIDA']))."',
+																	  cubagem = ".str_replace(",",".",$cub['CUBAGEM'])."")or die(mysqli_error($con));
+							
+				}
+			}
+		} // Fim do While principal
+		
+		if(isset($insertU) || isset($insertC)){
+			$db_data = array();
+			$myInfo = mysqli_query($con,"select * from sistemas_ag.lista_qtd_ag
+													   where cnpj = '".$cnpj."' 
+													   and (nota_fiscal like '%$busca%' or produto like '%$busca%' or lote like '%$busca%')
+													union all
+										 select * from sistemas_ag.lista_composto_ag
+													   where cnpj = '".$cnpj."' 
+													   and (nota_fiscal like '%$busca%' or composto like '%$busca%' or lote like '%$busca%')");
+			
+			while($response = mysqli_fetch_array($myInfo)){
+				$db_data[] = $response;
+			}
+			echo json_encode($db_data);
+		}else{
+			echo "0";
 		}
-		
-		
 	}
 	
 		
