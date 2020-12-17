@@ -672,7 +672,7 @@
 		$lote = $_REQUEST['lote'];
 		$unidade = $_REQUEST['unidade'];
 		$cnpj = $_REQUEST['cnpj'];
-		$cubagem = $_REQUEST['cubagem'];
+		$cubagem = $qtd_disp * str_replace(",",".",$_REQUEST['cubagem']);
 		$palete = $_REQUEST['palete'];
 		$auth = $_REQUEST['auth'];
 		$empresa = $_REQUEST['empresa'];
@@ -950,18 +950,27 @@
 						$docit->execute();
 						$qtdComposto = $docit->fetch();
 						
-						if($qtdComposto['QTD'] == 0){
+						if($qtdComposto['QTD'] <= 0){
 							echo "";
 						}else{
 								//Recurepar os componentes do composto
-								$items = $conAG->query("select c.id_artifrag ITEM, c.einh_mng_org MEDIDA, c.mng_best_org QTD  from comp_prod c where c.id_artifath = '".$composto."'");
+								$items = $conAG->query("select c.id_artifrag ITEM, c.einh_mng_org MEDIDA, c.mng_best_org QTD  from comp_prod c where c.id_artifath = '".trim($result['COMPOSTO'])."'");
 								$items->execute();
 								
 								$i = 0;
 								while($kit = $items->fetch()) {	
 									$i = $i + 1;
 									
+									if(isset($cub['CUBAGEM'])){
+										$cubagem = str_replace(",",".",$cub['CUBAGEM']);
+									}else{
+										$cubagem = '0';
+									}
+									
+									//echo trim($row['NOTA_FISCAL'])." - ".trim($row['LOTE_SERIAL'])." - ".trim($result['COMPOSTO'])." - ".trim($row['LOTE'])." - ".utf8_encode(trim($row['MEDIDA']))." - ".$cnpj." - ".str_replace(",",".",intval($cub['CUBAGEM']))." - ".$qtdComposto['QTD'];
+									
 									//Insert de composto
+							
 									$insertC = mysqli_query($con,"INSERT INTO `sistemas_ag`.`lista_composto_ag` 
 																(
 																	`nota_fiscal`,
@@ -978,19 +987,20 @@
 																	'".trim($row['NOTA_FISCAL'])."',
 																	'".trim($row['LOTE_SERIAL'])."',
 																	'".trim($result['COMPOSTO'])."',
-																	'".$loteComp['LOTE']."',
+																	'".trim($row['LOTE'])."',
 																	'".utf8_encode(trim($row['MEDIDA']))."',
 																	'".$cnpj."',
-																	".str_replace(",",".",$cub['CUBAGEM']).",
-																	".$qtdComposto['QTD'].",
-																)on duplicate key update 
+																	".$cubagem.",
+																	".$qtdComposto['QTD']."
+																) on duplicate key update 
 																	  nota_fiscal = '".trim($row['NOTA_FISCAL'])."',
 																	  lote_serial = '".trim($row['LOTE_SERIAL'])."',
-																	  composto = '".trim($row['PRODUTO'])."',
+																	  composto = '".trim($result['COMPOSTO'])."',
 																	  qtd_total = ".$qtdComposto['QTD'].",
 																	  lote = '".trim($row['LOTE'])."',
 																	  unidade_medida = '".utf8_encode(trim($row['MEDIDA']))."',
-																	  cubagem = ".str_replace(",",".",$cub['CUBAGEM'])."")or die(mysqli_error($con));
+																	  cubagem = ".$cubagem."")or die(mysqli_error($con));
+					
 								}
 							}
 						}
@@ -999,6 +1009,10 @@
 						$cubagem = "0".$cub['CUBAGEM'];
 					}else{
 						$cubagem = $cub['CUBAGEM'];
+					}
+					
+					if(isset($cubagem)){
+						$cubagem = str_replace(",",".",$cubagem);
 					}
 					
 						//Insert de quantidade
@@ -1021,16 +1035,16 @@
 																	'".trim($row['LOTE'])."',
 																	'".utf8_encode(trim($row['MEDIDA']))."',
 																	'".$cnpj."',
-																	".str_replace(",",".",$cubagem).",
+																	".$cubagem.",
 																	".round($estoque)."
-																)on duplicate key update 
+																) on duplicate key update 
 																	  nota_fiscal = '".trim($row['NOTA_FISCAL'])."',
 																	  lote_serial = '".trim($row['LOTE_SERIAL'])."',
 																	  produto = '".trim($row['PRODUTO'])."',
 																	  qtd_total = ".round($estoque).",
 																	  lote = '".trim($row['LOTE'])."',
 																	  unid_medida = '".utf8_encode(trim($row['MEDIDA']))."',
-																	  cubagem = ".str_replace(",",".",$cub['CUBAGEM'])."")or die(mysqli_error($con));
+																	  cubagem = ".$cubagem."")or die(mysqli_error($con));
 							
 				}
 			}
@@ -1052,6 +1066,136 @@
 			echo json_encode($db_data);
 		}else{
 			echo "0";
+		}
+	}
+	
+	//Cadastra o pedido por quantidade
+	if($action == "cadastrarSaldo"){
+		$nota_fiscal = $_REQUEST['nota_fiscal'];
+		$lote_serial = $_REQUEST['lote_serial'];
+		$produto = $_REQUEST['produto'];
+		$qtd_total = $_REQUEST['qtd_total'];
+		$lote = $_REQUEST['lote'];
+		$unidade = $_REQUEST['unidade'];
+		$cnpj = $_REQUEST['cnpj'];
+		$forma = $_REQUEST['forma'];
+		$auth = $_REQUEST['auth'];
+		$pedido = $_REQUEST['pedido'];
+		$cubagem = $pedido * str_replace(",",".",$_REQUEST['cubagem']);
+		$empresa = $_REQUEST['empresa'];
+			
+		$stid = $conAG->query("select  
+								distinct k.entow_id ID_CLIENTE,
+								c.entdf_dsc NAME,
+								k.entow_ent_id CNPJ,
+								ad.entdfb_str END,
+								ad.entdfb_nb NUMERO,
+								ad.entdfb_zip CEP,
+								ad.entdfb_dst BAIRRO,
+								t.entdfc_tel1 TEL,
+								ad.entdfb_city_nm CIDADE,
+								t.entdfc_email1 EMAIL
+							from entow k, entdfb ad, ENTDF c, entdfc t
+							where k.entow_ent_id = ad.entdfb_ent_id
+							and k.entow_ent_id = t.entdfc_ent_id
+							and k.entow_ent_id = c.entdf_id 
+							and k.entow_ent_id = '".$cnpj."'");
+
+	
+		$stid->execute();			
+		$row = $stid->fetch();
+		$client_id = $row['ID_CLIENTE'];
+		$email_cli = $row['EMAIL'];
+		$end_cli = $row['END'];
+		$numero_cli = $row['NUMERO'];
+		$bairro_cli = $row['BAIRRO'];
+		$tel_cli = $row['TEL'];
+		$cep_cli = $row['CEP'];
+		$cidade_cli = $row['CIDADE'];
+		
+		$alias = str_replace(" ","",$empresa);
+		$name = substr($alias,0,6);
+	
+		$insert = mysqli_query($con,"insert into sistemas_ag.num_pedido (id,prefixo) values (1,'$name') on duplicate key update id = id + 1");
+		
+		if($insert){
+			$sql = mysqli_query($con,"select id, prefixo from sistemas_ag.num_pedido where prefixo = '".$name."' order by id desc limit 1");
+			$valores = mysqli_fetch_array($sql);
+			$id = $valores['id'];
+			$prefix = $valores['prefixo'];
+			
+			$num_pedido = $prefix.$id;
+			
+			if($forma == "COMP"){
+				$items = $conAG->query("select c.id_artifrag ITEM, c.einh_mng_org MEDIDA, c.mng_best_org QTD  from comp_prod c where c.id_artifath = '".$produto."'");
+				$items->execute();
+				$i = 0;
+				while($kit = $items->fetch()) {	
+					$i = $i + 1;
+					
+					//Verifico se já foi feito um pedido composto para mesma nota e produto
+					$busca_qtdComp = mysqli_query($con,"select max(qtd_composto) QTD from sistemas_ag.clientes_ag where nota_fiscal = '$nota_fiscal' and produto = '".$kit['ITEM']."' group by nota_fiscal")or die("erro no busca_qtdComp");
+					$rows_qtdComp = mysqli_num_rows($busca_qtdComp);
+										
+					$loteAdd = $conAG->query("select q.trenn_1 LOTE from quanten q where q.nr_lieferschein = '".$nota_fiscal."' and q.id_artikel = '".$kit['ITEM']."'");
+					$loteAdd->execute();
+					$loteComp = $loteAdd->fetch();
+						
+					if($kit['QTD'] > 1){
+						$qtd_real = $pedido * $kit['QTD'];
+					}else{
+						$qtd_real = $pedido;
+					}
+
+					if($rows_qtdComp > 0){
+						$resultComposto = mysqli_fetch_array($busca_qtdComp);
+						$result_qtdComp = $resultComposto['QTD'] + $qtd_real;
+					}else{
+						$result_qtdComp = $qtd_real;
+					}
+					
+					//Vou coletar as quantidades pedidas e acumuladas dos itens compostos
+					$coletaQTD = mysqli_query($con,"INSERT INTO
+										`sistemas_ag`.`qtd_composto`(num_pedido,nota_fiscal,qtd_pedida,qtd_acumulada) VALUES ('$num_pedido','".$nota_fiscal."',".$qtd_real.",".$result_qtdComp.") 
+										")or die("erro no insert coletaQTD");
+										
+					//Vai inserir as informações do pedido feito no banco da tabela de histórico
+					$insert = mysqli_query($con,"insert into sistemas_ag.clientes_ag_hist (num_pedido,nota_fiscal,lote_serial,produto,qtd_disp,lote,unid_medida,pedido,nome_cli,cnpj,endereco,numero,bairro,cep_cli,cidade,cod_id,tel_cli,email_cli,palete,cubagem,auth,qtd_diff,qtd_composto,forma)
+					values
+					('$num_pedido','$nota_fiscal','$lote_serial','".$kit['ITEM']."','$qtd_total','".$loteComp['LOTE']."','$unidade','$qtd_real','$empresa','$cnpj','$end_cli','$numero_cli','$bairro_cli','$cep_cli','$cidade_cli','$client_id','$tel_cli','$email_cli','--','$cubagem','$auth','$qtd_real','$result_qtdComp','$forma') ON DUPLICATE KEY UPDATE pedido = pedido + '$qtd_real', qtd_disp = qtd_disp");		
+
+						
+					//Vai inserir as informações do pedido feito no banco
+					$insert = mysqli_query($con,"insert into sistemas_ag.clientes_ag (num_pedido,nota_fiscal,lote_serial,produto,qtd_disp,lote,unid_medida,pedido,nome_cli,cnpj,endereco,numero,bairro,cep_cli,cidade,cod_id,tel_cli,email_cli,palete,cubagem,auth,qtd_diff,qtd_composto,forma)
+					values
+					('$num_pedido','$nota_fiscal','$lote_serial','".$kit['ITEM']."','$qtd_total','".$loteComp['LOTE']."','$unidade','$qtd_real','$empresa','$cnpj','$end_cli','$numero_cli','$bairro_cli','$cep_cli','$cidade_cli','$client_id','$tel_cli','$email_cli','--','$cubagem','$auth','$qtd_real','$result_qtdComp','$forma') ON DUPLICATE KEY UPDATE pedido = pedido + '$qtd_real', qtd_disp = qtd_disp");
+										
+				}
+			}else{
+				$result_qtdComp = 0;
+				
+				//Vai inserir as informações do pedido feito no banco da tabela de histórico
+				$insert = mysqli_query($con,"insert into sistemas_ag.clientes_ag_hist (num_pedido,nota_fiscal,lote_serial,produto,qtd_disp,lote,unid_medida,pedido,nome_cli,cnpj,endereco,numero,bairro,cep_cli,cidade,cod_id,tel_cli,email_cli,palete,cubagem,auth,qtd_diff,qtd_composto,forma)
+				values
+				('$num_pedido','$nota_fiscal','$lote_serial','$produto','$qtd_total','$lote','$unidade','$pedido','$empresa','$cnpj','$end_cli','$numero_cli','$bairro_cli','$cep_cli','$cidade_cli','$client_id','$tel_cli','$email_cli','--','$cubagem','$auth','$pedido','$result_qtdComp','$forma') ON DUPLICATE KEY UPDATE pedido = pedido + '$pedido', qtd_disp = qtd_disp");		
+
+					
+				//Vai inserir as informações do pedido feito no banco
+				$insert = mysqli_query($con,"insert into sistemas_ag.clientes_ag (num_pedido,nota_fiscal,lote_serial,produto,qtd_disp,lote,unid_medida,pedido,nome_cli,cnpj,endereco,numero,bairro,cep_cli,cidade,cod_id,tel_cli,email_cli,palete,cubagem,auth,qtd_diff,qtd_composto,forma)
+				values
+				('$num_pedido','$nota_fiscal','$lote_serial','$produto','$qtd_total','$lote','$unidade','$pedido','$empresa','$cnpj','$end_cli','$numero_cli','$bairro_cli','$cep_cli','$cidade_cli','$client_id','$tel_cli','$email_cli','--','$cubagem','$auth','$pedido','$result_qtdComp','$forma') ON DUPLICATE KEY UPDATE pedido = pedido + '$pedido', qtd_disp = qtd_disp");	
+			}
+			
+					
+			
+			//Verifica se a inserção foi feita com sucesso
+			if($insert){
+				$limpar1 = mysqli_query($con,"delete from sistemas_ag.lista_composto_ag");
+				$limpar2 = mysqli_query($con,"delete from sistemas_ag.lista_qtd_ag");
+				echo "1";
+			}else{
+				echo "0";
+			}
 		}
 	}
 	
