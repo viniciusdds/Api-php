@@ -9,6 +9,8 @@
 		return;
 	}
 	
+	$init = 0;
+	
 	$userAG = "core_11_1"; 
 	$passAG = "T3cn1c05p";
 	
@@ -663,8 +665,31 @@
 		}
 	}
 	
+	//Aqui gero o pedido
+	if($action == "gerarPedido"){
+		$empresa = $_REQUEST['empresa'];
+		
+		$alias = str_replace(" ","",$empresa);
+		$name = substr($alias,0,6);
+	
+		$insert = mysqli_query($con,"insert into sistemas_ag.num_pedido (id,prefixo) values (1,'$name') on duplicate key update id = id + 1");
+		
+		if($insert){
+			$sql = mysqli_query($con,"select id, prefixo from sistemas_ag.num_pedido where prefixo = '".$name."' order by id desc limit 1");
+			$valores = mysqli_fetch_array($sql);
+			$id = $valores['id'];
+			$prefix = $valores['prefixo'];
+			
+			$num_pedido = $prefix.$id;
+			echo $num_pedido;
+		}else{
+			echo "0";
+		}
+	}
+	
 	//Aqui faz o cadastro dos pedidos por paletes
 	if($action == "cadastrarPedido"){
+		$init = $init + 1;
 		$nota_fiscal = $_REQUEST['nota_fiscal'];
 		$lote_serial = $_REQUEST['lote_serial'];
 		$produto = $_REQUEST['produto'];
@@ -676,6 +701,7 @@
 		$palete = $_REQUEST['palete'];
 		$auth = $_REQUEST['auth'];
 		$empresa = $_REQUEST['empresa'];
+		$num_pedido = $_REQUEST['num_pedido'];
 		
 		
 		$stid = $conAG->query("select  
@@ -706,24 +732,12 @@
 		$tel_cli = $row['TEL'];
 		$cep_cli = $row['CEP'];
 		$cidade_cli = $row['CIDADE'];
-		
-		
-		$alias = str_replace(" ","",$empresa);
-		$name = substr($alias,0,6);
-	
-		$insert = mysqli_query($con,"insert into sistemas_ag.num_pedido (id,prefixo) values (1,'$name') on duplicate key update id = id + 1");
-		
-		if($insert){
-			$sql = mysqli_query($con,"select id, prefixo from sistemas_ag.num_pedido where prefixo = '".$name."' order by id desc limit 1");
-			$valores = mysqli_fetch_array($sql);
-			$id = $valores['id'];
-			$prefix = $valores['prefixo'];
-			
-			$num_pedido = $prefix.$id;
-			//echo $client_id." - ".$nota_fiscal." - ".$lote_serial." - ".$produto." - ".$qtd_disp." - ".$lote." - ".$unidade." - ".$cnpj." - ".$cubagem." - ".$palete." - ".$email_cli." - ".$end_cli." - ".$numero_cli." - ".$bairro_cli." - ".$tel_cli." - ".$cep_cli." - ".$cidade_cli;
-			
 		$auth = $_REQUEST['auth'];
 		$empresa = $_REQUEST['empresa'];;
+			
+				
+		//echo $client_id." - ".$nota_fiscal." - ".$lote_serial." - ".$produto." - ".$qtd_disp." - ".$lote." - ".$unidade." - ".$cnpj." - ".$cubagem." - ".$palete." - ".$email_cli." - ".$end_cli." - ".$numero_cli." - ".$bairro_cli." - ".$tel_cli." - ".$cep_cli." - ".$cidade_cli." - ".$num_pedido;
+			
 			
 			
 				$cadastrar = mysqli_query($con,"insert into `sistemas_ag`.`clientes_ag` 
@@ -784,10 +798,7 @@
 				}else{
 					echo mysqli_error($con);
 				}
-			
-		}else{
-			echo "2";
-		}	
+		
 	}
 	
 	//Pesquisa itens por quantidade
@@ -1083,6 +1094,7 @@
 		$pedido = $_REQUEST['pedido'];
 		$cubagem = $pedido * str_replace(",",".",$_REQUEST['cubagem']);
 		$empresa = $_REQUEST['empresa'];
+		$num_pedido = $_REQUEST['num_pedido'];
 			
 		$stid = $conAG->query("select  
 								distinct k.entow_id ID_CLIENTE,
@@ -1113,18 +1125,6 @@
 		$cep_cli = $row['CEP'];
 		$cidade_cli = $row['CIDADE'];
 		
-		$alias = str_replace(" ","",$empresa);
-		$name = substr($alias,0,6);
-	
-		$insert = mysqli_query($con,"insert into sistemas_ag.num_pedido (id,prefixo) values (1,'$name') on duplicate key update id = id + 1");
-		
-		if($insert){
-			$sql = mysqli_query($con,"select id, prefixo from sistemas_ag.num_pedido where prefixo = '".$name."' order by id desc limit 1");
-			$valores = mysqli_fetch_array($sql);
-			$id = $valores['id'];
-			$prefix = $valores['prefixo'];
-			
-			$num_pedido = $prefix.$id;
 			
 			if($forma == "COMP"){
 				$items = $conAG->query("select c.id_artifrag ITEM, c.einh_mng_org MEDIDA, c.mng_best_org QTD  from comp_prod c where c.id_artifath = '".$produto."'");
@@ -1196,7 +1196,6 @@
 			}else{
 				echo "0";
 			}
-		}
 	}
 	
 		
