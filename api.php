@@ -1203,8 +1203,6 @@
 		$categoria = $_REQUEST['nivel'];
 		$cnpj = $_REQUEST['cnpj'];
 		$busca = "";
-		$db_data = array();
-		
 		
 		if($categoria == "1"){
 			//Perfil Cliente
@@ -1723,23 +1721,39 @@
 									}else{
 										$numPedido = "";
 									}			
-												echo $result->num_pedido." / ";	
-												echo $numPedido;						
-												echo $result->nota_fiscal." / ";
-												echo $result->lote_serial." / ";
-												echo $result->produto." / ";
-												echo $result->qtd_disp." / "; // estava oculto no site
-												echo $result->lote." / ";
-												echo $result->unid_medida." / ";
-												echo $result->cubagem." / ";
-												echo round($result->pedido,2)." / ";
-												//Verifica o status de liberação do cliente se status = 1 aguardando liberar se 2 liberado										
-												echo $result->status." / "; 
-												//Verifica se tem data de agendamento se tiver bloquea o botão de agendamento e de edição de quantidade
-												echo $result->data."<br>"; 
+										
 					
 													
-												
+												$insere = mysqli_query($con,"insert into sistemas_ag.lista_gerado 
+																					 (
+																						num_pedido,
+																						nota_fiscal,
+																						lote_serial,
+																						produto,
+																						qtd_disp,
+																						lote,
+																						unid_medida,
+																						pedido,
+																						cubagem,
+																						cnpj,
+																						status, 
+																						data
+																					 )
+																					 values
+																					 (
+																						'".$result->num_pedido."',
+																						'".$result->nota_fiscal."',
+																						'".$result->lote_serial."',
+																						'".$result->produto."',
+																						".$result->qtd_disp.",
+																						'".$result->lote."',
+																						'".$result->unid_medida."',
+																						'".round($result->pedido, 2)."',
+																						'".$result->cubagem."',
+																						'".$cnpj."',
+																						'".$result->status."',
+																						'".$result->data."'
+																					 )")or die(mysqli_error($con));
 														
 						//Retorna para transportadora
 						}else{
@@ -1756,31 +1770,99 @@
 									}else{
 										$numPedido = "";
 									}
-										echo $result->num_pedido." / ";
-										echo $numPedido;
-										echo $result->nota_fiscal." / ";
-										echo $result->lote_serial." / ";
-										echo $result->produto." / ";
-										echo $result->qtd_disp." / ";
-										echo $result->lote." / ";
-										echo $result->unid_medida." / ";
-										echo $result->cubagem." / ";				
-										echo round($result->pedido, 2)." / ";
-										//Verifica o status de liberação do cliente se status = 1 aguardando liberar se 2 liberado	
-										echo $result->status." / ";
-										//Verifica se tem data de agendamento se tiver bloquea o botão de agendamento e de edição de quantidade
-										echo $result->data."<br>";
-										
 									
+										
+										$insere = mysqli_query($con,"insert into sistemas_ag.lista_gerado 
+																				 (
+																					num_pedido,
+																					nota_fiscal,
+																					lote_serial,
+																					produto,
+																					qtd_disp,
+																					lote,
+																					unid_medida,
+																					pedido,
+																					cubagem,
+																					cnpj,
+																					status, 
+																					data
+																				 )
+																				 values
+																				 (
+																					'".$result->num_pedido."',
+																					'".$result->nota_fiscal."',
+																					'".$result->lote_serial."',
+																					'".$result->produto."',
+																					".$result->qtd_disp.",
+																					'".$result->lote."',
+																					'".$result->unid_medida."',
+																					'".round($result->pedido, 2)."',
+																					'".$result->cubagem."',
+																					'".$cnpj."',
+																					'".$result->status."',
+																					'".$result->data."'
+																				 )")or die(mysqli_error($con));
 							
 								}
 						}
 					}else{
 						echo "";
 					}
-				}
+				}// fim do else status finalizado Alcis
 	
+			}// fim do While
+			
+			if($categoria == "1"){
+				$db_data = array();
+				$queryPedidos = mysqli_query($con,"select  
+												num_pedido,
+												group_concat(DISTINCT '(',nota_fiscal,' - ', produto,' - ', lote,'\n', cubagem,' - ', unid_medida,' - ', pedido,')\n\n' ORDER BY lote SEPARATOR '') infoES,
+												status,
+												data
+											from sistemas_ag.lista_gerado 
+											where cnpj = '".$cnpj."'
+											and status <> '3'											
+											group by num_pedido");
+			}else{
+				$db_data = array();
+				$queryPedidos = mysqli_query($con,"select  
+												num_pedido,
+												group_concat(DISTINCT '(',nota_fiscal,' - ', produto,' - ', lote,'\n', cubagem,' - ', unid_medida,' - ', pedido,')\n\n' ORDER BY lote SEPARATOR '') infoES,
+												status,
+												data
+											from sistemas_ag.lista_gerado 
+											where cnpj = '".$cnpj."'
+											and status = '2'											
+											group by num_pedido");
 			}
-		}	
-	}		
+			
+						
+			while($result = mysqli_fetch_array($queryPedidos)){
+				$db_data[] = $result;
+			}
+			
+			echo json_encode($db_data);
+			
+		}else{
+			echo "0";
+		}// fim do if do check	
+	}
+
+	if($action == "consultaInfo"){
+		$num_pedido = $_REQUEST['num_pedido'];
+		
+		$db_data = array();
+		$sql = mysqli_query($con,"select 
+								  	nota_fiscal,
+									produto,
+									lote
+								  from sistemas_ag.lista_gerado where num_pedido = '".$num_pedido."' 
+								  group by lote,nota_fiscal,produto");
+								  
+		while($result = mysqli_fetch_array($sql)){
+			$db_data[] = $result;
+		}
+		
+		echo json_encode($db_data);
+	}	
 ?>
