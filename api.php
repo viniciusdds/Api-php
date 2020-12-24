@@ -1855,7 +1855,8 @@
 		$sql = mysqli_query($con,"select 
 								  	nota_fiscal,
 									produto,
-									lote
+									lote,
+									qtd_disp
 								  from sistemas_ag.lista_gerado where num_pedido = '".$num_pedido."' 
 								  group by lote,nota_fiscal,produto");
 								  
