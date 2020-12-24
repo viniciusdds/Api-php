@@ -15,7 +15,8 @@
 	$passAG = "T3cn1c05p";
 	
 	//Aqui pego os dados do cliente na base da Alcis para inserir na tabela clienteAG do Mysql
-	$tnsAG = "(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=172.20.220.43)(PORT=1521)) (CONNECT_DATA=(SID=alcisagprd)))";
+	//$tnsAG = "(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=172.20.220.43)(PORT=1521)) (CONNECT_DATA=(SID=alcisagprd)))";
+	$tnsAG = "(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=172.20.220.42)(PORT=1521)) (CONNECT_DATA=(SID=ALCISAGHOMO)))";
 	try {
 		$conAG = new PDO('oci:dbname='.$tnsAG,$userAG,$passAG);
 		$conAG->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -1737,7 +1738,8 @@
 																						cubagem,
 																						cnpj,
 																						status, 
-																						data
+																						data,
+																						palete
 																					 )
 																					 values
 																					 (
@@ -1752,7 +1754,8 @@
 																						'".$result->cubagem."',
 																						'".$cnpj."',
 																						'".$result->status."',
-																						'".$result->data."'
+																						'".$result->data."',
+																						'".$result->palete."'
 																					 )")or die(mysqli_error($con));
 														
 						//Retorna para transportadora
@@ -1785,7 +1788,8 @@
 																					cubagem,
 																					cnpj,
 																					status, 
-																					data
+																					data,
+																					palete
 																				 )
 																				 values
 																				 (
@@ -1800,7 +1804,8 @@
 																					'".$result->cubagem."',
 																					'".$cnpj."',
 																					'".$result->status."',
-																					'".$result->data."'
+																					'".$result->data."',
+																					'".$result->palete."'
 																				 )")or die(mysqli_error($con));
 							
 								}
@@ -1848,6 +1853,7 @@
 		}// fim do if do check	
 	}
 
+	//Aqui eu consulto os itens no pedido especifico para lista de edição de quantidade
 	if($action == "consultaInfo"){
 		$num_pedido = $_REQUEST['num_pedido'];
 		
@@ -1856,7 +1862,10 @@
 								  	nota_fiscal,
 									produto,
 									lote,
-									qtd_disp
+									qtd_disp,
+									pedido,
+									cubagem,
+									palete
 								  from sistemas_ag.lista_gerado where num_pedido = '".$num_pedido."' 
 								  group by lote,nota_fiscal,produto");
 								  
@@ -1865,5 +1874,187 @@
 		}
 		
 		echo json_encode($db_data);
+	}
+
+	//Aqui eu edito a quantidade do pedido
+	if($action == "editarQtd"){
+		$num_pedido = $_REQUEST['num_pedido'];
+		$nota_fiscal = $_REQUEST['nota_fiscal'];
+		$produto = $_REQUEST['produto'];
+		$lote = $_REQUEST['lote'];
+		$qtd_disp = $_REQUEST['qtd_disp'];
+		$qtd_nova = $_REQUEST['qtd_nova'];
+		$pedido = $_REQUEST['pedido'];
+		$cubagem = $_REQUEST['cubagem'];
+		$palete = $_REQUEST['palete'];
+		
+	
+		
+		$pos = strpos($produto,"KIT");
+		
+		if($pos){
+			
+			$pesqQTD = $conAG->query("select 
+										q.trenn_1 LOTE,
+										c.id_artifrag ITEM, 
+										c.mng_best_org QTD
+									from comp_prod c, quanten q
+									where q.id_klient = c.id_klientfa
+									and q.id_artikel = c.id_artifrag
+									and q.nr_lieferschein = '".$nota_fiscal."' 
+									group by c.id_artifrag, c.mng_best_org, q.trenn_1");
+				
+				
+			$pesqQTD->execute();
+			
+			while($returnQTD = $pesqQTD->fetch()){
+				
+					
+				$qtdEditada = ((int)$returnQTD['QTD'] * (int)$qtd_nova);
+				$pesqCUB = $conAG->query("select REPLACE(round(a.vol,3), ',' ,'.') CUBAGEM from artvpe a where a.id_artikel = '".$returnQTD['ITEM']."' and a.vol is not null");
+				$pesqCUB->execute();
+				$returnCUB = $pesqCUB->fetch();
+				
+				$valCubagem = ((float)$returnCUB['CUBAGEM'] * (float)$qtdEditada);
+				
+				//$editarQtdPedido = mysqli_query($con,"UPDATE `sistemas_ag`.`qtd_composto` SET qtd_pedida = '".$qtd_pedido."' WHERE num_pedido = '".$num_pedido."'")or die("erro no update editarQtdPedido");
+				
+				$editar = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag` SET `pedido`= '".$qtdEditada."', palete = '--', troca='V', cubagem='".round($valCubagem,3)."'  WHERE `num_pedido`='".$num_pedido."' and nota_fiscal = '".$nota_fiscal."' and produto = '".$returnQTD['ITEM']."' and lote = '".$returnQTD['LOTE']."'")or die("erro no update de edicao 1");
+				
+				$editar2 = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag_hist` SET `pedido`= '".$qtdEditada."', `palete` = '--', `troca`='V', `cubagem`='".$valCubagem."' WHERE `num_pedido`='".$num_pedido."' and nota_fiscal = '".$nota_fiscal."' and produto = '".$returnQTD['ITEM']."' and lote = '".$returnQTD['LOTE']."'")or die("erro no update de edicao 3");
+			}
+			
+			
+			//Verifica se no pedido tem item composto
+			$buscaNF = mysqli_query($con,"select nota_fiscal NF from sistemas_ag.qtd_composto where num_pedido = '".$num_pedido."' group by nota_fiscal")or die("erro do sqlQtdRest");
+
+			$rowsNF = mysqli_num_rows($buscaNF);
+			
+			if($rowsNF > 0){
+				
+				//Verifico se já foi feito um pedido composto para mesma nota e produto
+				$busca_qtdComp = mysqli_query($con,"select 
+													count(distinct num_pedido) pedidos
+												from sistemas_ag.clientes_ag where nota_fiscal = '".$nota_fiscal."' and qtd_composto <= (
+													select qtd_composto from (select max(qtd_composto) qtd_composto from sistemas_ag.clientes_ag) as tb1)")or die("erro no busca_qtdComp");
+													
+				$resultComposto = mysqli_fetch_array($busca_qtdComp);
+				
+				
+				while($ReturnNF = mysqli_fetch_array($buscaNF)){
+					$nf_fiscal = $ReturnNF['NF'];
+					//echo "NF encaminhada: ".$nota." NV: ".$nf_fiscal."\n";
+					
+			
+					//Aqui verifico qual quantidade composta esta sendo deletada
+					$sqlQTD = mysqli_query($con,"SELECT 
+												qtd_pedida,
+												qtd_acumulada,
+												maximo,
+												sum(soma) total
+											FROM 
+											(SELECT 
+												qtd_pedida qtd_pedida, 
+												qtd_acumulada qtd_acumulada
+											FROM sistemas_ag.qtd_composto a
+											where a.num_pedido = '".$num_pedido."'
+											 and a.nota_fiscal = '".$nf_fiscal."'
+											 group by a.num_pedido) as tb1,
+											 (select 
+												max(qtd_composto) maximo
+											from sistemas_ag.clientes_ag
+												where nota_fiscal = '".$nf_fiscal."'
+											) as tb2,
+											(select 
+														 qtd_pedida soma
+												  from sistemas_ag.qtd_composto
+												  where nota_fiscal = '".$nf_fiscal."' group by num_pedido) as tb3")or die("erro no select sqlQTD");
+					
+					$resultQTD = mysqli_fetch_array($sqlQTD);						
+					if($resultQTD['total'] != ""){
+						
+						$sobraQTD = ((int)$resultQTD['total'] - (int)$resultQTD['qtd_pedida']);
+						if($nota_fiscal == $nf_fiscal){
+							$valorAtual = ((int)$qtd_nova + (int)$sobraQTD);
+						}else{
+							$valorAtual = (int)$resultQTD['total'];
+						}
+						//echo "Sobra: ".$sobraQTD." ValorAtual: ".$valorAtual." QtdPedido: ".$qtd_pedido." ".$resultQTD['total']." ".$resultQTD['qtd_pedida']."\n";
+						
+						if($resultComposto['pedidos'] == 1){
+							$editar3 = mysqli_query($con,"UPDATE sistemas_ag.clientes_ag SET `qtd_composto`= $qtd_nova, `time_stamp` = now() WHERE `nota_fiscal`= '".$nf_fiscal."' AND qtd_composto = (SELECT 
+							qtd_composto FROM (SELECT MAX(qtd_composto) qtd_composto FROM sistemas_ag.clientes_ag
+							WHERE nota_fiscal = '".$nf_fiscal."') AS tb1)")or die("erro no update de edicao 2 base 1");
+							
+							$editar4 = mysqli_query($con,"UPDATE sistemas_ag.clientes_ag_hist SET `qtd_composto`= $qtd_nova, `time_stamp` = now() WHERE `nota_fiscal`= '".$nf_fiscal."' AND qtd_composto = (SELECT 
+							qtd_composto FROM (SELECT MAX(qtd_composto) qtd_composto FROM sistemas_ag.clientes_ag_hist
+							WHERE nota_fiscal = '".$nf_fiscal."') AS tb1)")or die("erro no update de edicao 2 hist 1");
+						}else{	
+							$editar3 = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag` SET `qtd_composto` = ".$valorAtual.", `time_stamp` = now(), `qtd_disp`= '$sobraQTD' WHERE (`nota_fiscal` = '".$nota_fiscal."') and qtd_composto = (select qtd_composto from (select max(qtd_composto) qtd_composto from sistemas_ag.clientes_ag where nota_fiscal = '".$nf_fiscal."') as tb1)")or die("erro no update de edicao 2 base 2");
+							
+							$editar4 = mysqli_query($con,"UPDATE sistemas_ag.clientes_ag_hist SET `qtd_composto`=  ".$valorAtual.", `time_stamp` = now(), `qtd_disp`= '$sobraQTD' WHERE `nota_fiscal`= '".$nf_fiscal."' AND qtd_composto = (SELECT qtd_composto FROM (SELECT MAX(qtd_composto) qtd_composto FROM sistemas_ag.clientes_ag_hist
+							WHERE nota_fiscal = '".$nf_fiscal."') AS tb1)")or die("erro no update de edicao 2 hist 2");
+						}
+						
+						
+						
+						if($editar3 && $editar4){
+							$editarQtdComposto = mysqli_query($con,"UPDATE `sistemas_ag`.`qtd_composto` SET `qtd_acumulada` = ".$valorAtual.", qtd_pedida = '".$qtd_nova."' WHERE `num_pedido` = '".$num_pedido."' and nota_fiscal = '".$nota_fiscal."'")or die("erro no update editarQtdComposto");
+						}
+					}
+				}
+			}
+			
+		}else{
+			$qtdEditada = $qtd_nova;
+			
+			if(strpos($cubagem,"PP") == true){
+				$cub = 0;
+			}elseif(strpos($cubagem,"QT") == true){
+				$cub = 0;
+			}else{
+				$cub = (((int)$cubagem/(int)$pedido) * (int)$qtd_nova);
+			}
+		}
+
+		
+		
+		$consult = mysqli_query($con,"select count(*) cont, troca from sistemas_ag.clientes_ag where num_pedido = '".$num_pedido."' and nota_fiscal = '".$nota_fiscal."' and produto = '".$produto."' and lote = '".$lote."'  group by num_pedido,nota_fiscal,lote,produto")or die("erro no select consult");
+		$resp = mysqli_fetch_array($consult);
+		
+		if($resp['cont'] > 1){
+			$timer1 = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag` SET `time_stamp`=now(), troca='V' WHERE `num_pedido`='".$num_pedido."' and palete='".$palete."'")or die("erro no update de timer1");
+			$timer2 = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag_hist` SET `time_stamp`=now(), troca='V' WHERE `num_pedido`='".$num_pedido."' and palete='".$palete."'")or die("erro no update de timer2");
+			
+			if($resp['troca'] == "V"){
+				$limpar1 = mysqli_query($con,"delete a from sistemas_ag.clientes_ag a, sistemas_ag.clientes_ag b where a.num_pedido = '".$num_pedido."' and a.num_pedido = b.num_pedido and a.counter < b.counter and a.nota_fiscal = b.nota_fiscal and a.produto = b.produto and a.lote = b.lote")or die("erro no delete limpar1");
+				$limpar2 = mysqli_query($con,"delete a from sistemas_ag.clientes_ag_hist  a, sistemas_ag.clientes_ag_hist b where a.num_pedido = '".$num_pedido."' and a.num_pedido = b.num_pedido and a.counter < b.counter and a.nota_fiscal = b.nota_fiscal and a.produto = b.produto and a.lote = b.lote")or die("erro no delete limpar2");
+			}else{	
+				$limpar1 = mysqli_query($con,"delete a from sistemas_ag.clientes_ag a, sistemas_ag.clientes_ag b where a.num_pedido = '".$num_pedido."' and a.num_pedido = b.num_pedido and a.counter < b.counter and a.nota_fiscal = b.nota_fiscal and a.produto = b.produto and a.lote = b.lote")or die("erro no delete limpar1");
+				$limpar2 = mysqli_query($con,"delete a from sistemas_ag.clientes_ag_hist a, sistemas_ag.clientes_ag_hist b where a.num_pedido = '".$num_pedido."' and a.num_pedido = b.num_pedido and a.counter < b.counter and a.nota_fiscal = b.nota_fiscal and a.produto = b.produto and a.lote = b.lote")or die("erro no delete limpar2");
+			}
+			
+		}else{
+			$timer1 = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag` SET `time_stamp`=now() WHERE `num_pedido`='".$num_pedido."'")or die("erro no update de timer1");
+		}
+		
+		if($pos){
+			
+		}else{
+			$editar = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag` SET `pedido`= '".$qtdEditada."', palete = '--', troca='V', cubagem='".$cub."' WHERE `num_pedido`='".$num_pedido."' and nota_fiscal = '".$nota_fiscal."' and produto = '".$produto."' and lote = '".$lote."'")or die("erro no update de edicao");
+		
+		
+			$editar2 = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag_hist` SET `pedido`= '".$qtdEditada."', palete = '--', troca='V', cubagem='".$cub."', qtd_composto='".$qtd_nova."' WHERE `num_pedido`='".$num_pedido."' and nota_fiscal = '".$nota_fiscal."' and produto = '".$produto."' and lote = '".$lote."'")or die("erro no update de edicao");
+		}
+		
+		
+		if($editar && $editar2){
+			$limpar = mysqli_query($con,"DELETE FROM `sistemas_ag`.`lista_gerado`");
+			echo "1";
+		}else{
+			echo "0";
+		}
+		
+		
 	}	
 ?>
