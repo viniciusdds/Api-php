@@ -740,7 +740,7 @@
 		//echo $client_id." - ".$nota_fiscal." - ".$lote_serial." - ".$produto." - ".$qtd_disp." - ".$lote." - ".$unidade." - ".$cnpj." - ".$cubagem." - ".$palete." - ".$email_cli." - ".$end_cli." - ".$numero_cli." - ".$bairro_cli." - ".$tel_cli." - ".$cep_cli." - ".$cidade_cli." - ".$num_pedido;
 			
 			
-			
+			    // tabela principal
 				$cadastrar = mysqli_query($con,"insert into `sistemas_ag`.`clientes_ag` 
 																(
 																	`num_pedido`,
@@ -791,8 +791,60 @@
 																	".$auth.",
 																	".$qtd_disp."
 																)");
+						
+                // tabela de histórico						
+				$cadastrar2 = mysqli_query($con,"insert into `sistemas_ag`.`clientes_ag_hist` 
+																(
+																	`num_pedido`,
+																	`nota_fiscal`,
+																	`lote_serial`,
+																	`produto`,
+																	`qtd_disp`,
+																	`lote`,
+																	`unid_medida`,
+																	`pedido`,
+																	`nome_cli`,
+																	`cnpj`,
+																	`endereco`,
+																	`numero`,
+																	`bairro`,
+																	`cep_cli`,
+																	`cidade`,
+																	`cod_id`,
+																	`email_cli`,
+																	`tel_cli`,
+																	`palete`,
+																	`cubagem`,
+																	`auth`,
+																	`qtd_por_uz`
+																) 
+																values 
+																(
+																	'".$num_pedido."',
+																	'".$nota_fiscal."',
+																	'".$lote_serial."',
+																	'".$produto."',
+																	 ".$qtd_disp.",
+																	'".$lote."',
+																	'".$unidade."',
+																	".$qtd_disp.",
+																	'".$empresa."',
+																	'".$cnpj."',
+																	'".$end_cli."',
+																	'".$numero_cli."',
+																	'".$bairro_cli."',
+																	'".$cep_cli."',
+																	'".$cidade_cli."',
+																	".$client_id.",
+																	'".$email_cli."',
+																	'".$tel_cli."',
+																	'".$palete."',
+																	".$cubagem.",
+																	".$auth.",
+																	".$qtd_disp."
+																)");
 			
-				if($cadastrar){
+				if($cadastrar && $cadastrar2){
 					$limpar = mysqli_query($con,"delete from sistemas_ag.lista_pedidos_ag");
 					$removerDunble = mysqli_query($con,"delete a from sistemas_ag.clientes_ag a, sistemas_ag.clientes_ag b where a.counter < b.counter and a.palete = b.palete and a.nota_fiscal = '".$nota_fiscal."'");
 					echo "1";
@@ -1711,6 +1763,60 @@
 					$pos = strpos($result->num_pedido,"_");
 					if($pos == ""){
 						
+						//Aqui recupero o item pai para pegar a quantidade total
+						$itemsCompostos = mysqli_query($con,"SELECT composto FROM sistemas_ag.itens_composto where itens = '".$result->produto."' and nota = '".$result->nota_fiscal."'")or die("erro no select itemsComposto");
+						$itemPai = mysqli_fetch_array($itemsCompostos);
+			
+						$docit = $conAG->query("select 
+													doc.dochd_doc_prc_id,
+													case when s.sfcab_avl_bal_qt is null then di.docit_qt  else s.sfcab_avl_bal_qt  end QTD, 
+													doc.dochd_doc_id NF_ENTRADA, 
+													doc.dochd_doc_id ITEM_PAI
+												from sfcab s right join dochd doc
+													 on s.sfcab_doc_prc_id = doc.dochd_doc_prc_id
+													 inner join docit di
+													 on doc.dochd_doc_prc_id = di.docit_doc_prc_id
+												where doc.dochd_doc_id = '".$result->nota_fiscal."'
+													 and di.docit_cd = '".trim($itemPai['composto'])."'
+													 group by 
+													 s.sfcab_avl_bal_qt, 
+													 doc.dochd_doc_id, 
+													 doc.dochd_doc_id,
+													 di.docit_qt,
+													 doc.dochd_doc_prc_id");
+						$docit->execute();
+						$qtdComposto = $docit->fetch();
+						
+						//Aqui pego a quantidade disponivel
+						$itensCompostos = mysqli_query($con,"select 
+																	".$qtdComposto['QTD']." - max(qtd_composto) disp
+																	from sistemas_ag.clientes_ag where nota_fiscal = '".$result->nota_fiscal."'")or die("erro no select itensCompostos");
+						
+						$verifyKIT = strpos($result->produto,"KIT");
+						$qtdCompostos = mysqli_fetch_array($itensCompostos);
+						
+						//Aqui eu pego a quantidade geral para trocar
+						$totaisPedidos = mysqli_query($con,"select qtd_pedida REST from sistemas_ag.qtd_composto where num_pedido = '".$result->num_pedido."' and nota_fiscal = '".$result->nota_fiscal."'")or die("erro no select totaisPedidos");
+						$numeroPedidos = mysqli_num_rows($totaisPedidos);
+						if($numeroPedidos > 0){
+							$resultsPedidos = mysqli_fetch_array($totaisPedidos);
+							if($qtdCompostos['disp'] >= $resultsPedidos['REST']){
+								$qtdParaTroca = $qtdCompostos['disp'] + $resultsPedidos['REST'];
+							}else{
+								$qtdParaTroca = $resultsPedidos['REST'] + $qtdCompostos['disp'];
+							}
+						}else{
+							$qtdParaTroca = $qtdComposto['QTD'];
+						}
+						
+						
+						//Verifico se o item é composto
+						if($verifyKIT){
+							$qtdDisp = $qtdCompostos['disp'];
+						}else{
+							$qtdDisp = round($result->qtd_disp) <= 0 ? "0" : round($result->qtd_disp);
+						}
+						
 						//Retorna para Cliente
 						if($categoria == "1"){
 																		
@@ -1747,7 +1853,7 @@
 																						'".$result->nota_fiscal."',
 																						'".$result->lote_serial."',
 																						'".$result->produto."',
-																						".$result->qtd_disp.",
+																						".$qtdDisp.",
 																						'".$result->lote."',
 																						'".$result->unid_medida."',
 																						'".round($result->pedido, 2)."',
@@ -1797,7 +1903,7 @@
 																					'".$result->nota_fiscal."',
 																					'".$result->lote_serial."',
 																					'".$result->produto."',
-																					".$result->qtd_disp.",
+																					".$qtdDisp.",
 																					'".$result->lote."',
 																					'".$result->unid_medida."',
 																					'".round($result->pedido, 2)."',
@@ -2053,8 +2159,117 @@
 			echo "1";
 		}else{
 			echo "0";
+		}	
+	}
+
+	//Aqui eu limpo a lista de itens
+    if($action == "limparLista"){
+		
+		$limpar = mysqli_query($con,"DELETE FROM `sistemas_ag`.`lista_gerado`");
+		if($limpar){
+			echo "1";
+		}else{
+			echo "0";
+		}
+	}
+
+    //Aqui vou remover o pedido gerados
+    if($action == "removerPedido"){
+		$pedido = $_REQUEST['num_pedido'];
+		
+		//Verifica se no pedido tem item composto
+		$buscaNF = mysqli_query($con,"select nota_fiscal NF from sistemas_ag.qtd_composto where num_pedido = '".$pedido."' group by nota_fiscal")or die("erro do sqlQtdRest");
+
+		$rowsNF = mysqli_num_rows($buscaNF);
+			
+			if($rowsNF > 0){
+				$in = 0;
+				while($ReturnNF = mysqli_fetch_array($buscaNF)){
+					$in = $in + 1;
+					$nf_fiscal2 = $ReturnNF['NF'];
+					
+					//Aqui verifico qual quantidade composta esta sendo deletada
+					$sqlQTD = mysqli_query($con,"SELECT 
+												qtd_pedida,
+												qtd_acumulada,
+												maximo,
+												sum(soma) total
+											FROM 
+											(SELECT 
+												qtd_pedida qtd_pedida, 
+												qtd_acumulada qtd_acumulada
+											FROM sistemas_ag.qtd_composto a
+											where a.num_pedido = '".$pedido."'
+											 group by a.num_pedido) as tb1,
+											 (select 
+												max(qtd_composto) maximo
+											from sistemas_ag.clientes_ag
+												where nota_fiscal = '".$nf_fiscal2."'
+											) as tb2,
+											(select 
+												qtd_pedida soma
+											from sistemas_ag.qtd_composto
+											where nota_fiscal = '".$nf_fiscal2."' group by num_pedido) as tb3")or die("erro no select sqlQTD");
+											
+					$rowsQTD = mysqli_num_rows($sqlQTD);					
+										
+					if($rowsQTD > 0){
+						
+						$remover = mysqli_query($con,"DELETE FROM `sistemas_ag`.`clientes_ag` WHERE `num_pedido` = '".$pedido."' and nota_fiscal = '".$nf_fiscal2."'")or die("erro no delete remover pedido do cliente ag");
+							
+						$resultQTD = mysqli_fetch_array($sqlQTD);
+						$valorAtual =  ((int)$resultQTD['total'] - (int)$resultQTD['qtd_pedida']);	
+								
+						$atuaQTD = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag` SET `qtd_composto` = ".$valorAtual." WHERE (`nota_fiscal` = '".$nf_fiscal2."') and qtd_composto <= (select qtd_composto from (select max(qtd_composto) qtd_composto from sistemas_ag.clientes_ag where nota_fiscal = '".$nf_fiscal2."') as tb1)")or die("erro no update atuaQTD");
+								
+						$atuaQTD2 = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag_hist` SET `qtd_composto` = ".$valorAtual." WHERE (`nota_fiscal` = '".$nf_fiscal2."') and qtd_composto <= (select qtd_composto from (select max(qtd_composto) qtd_composto from sistemas_ag.clientes_ag_hist where nota_fiscal = '".$nf_fiscal2."') as tb1)")or die("erro no update atuaQTD");
+								
+						if($atuaQTD && $atuaQTD2){
+							$removerQtdComposto = mysqli_query($con,"DELETE FROM `sistemas_ag`.`qtd_composto` WHERE `num_pedido` = '".$pedido."' and nota_fiscal = '".$nf_fiscal2."'")or die("erro no delete remover qtd composta");
+						}
+					}
+				}
+			}
+		
+		$remover = mysqli_query($con,"DELETE FROM `sistemas_ag`.`clientes_ag` WHERE `num_pedido` = '".$pedido."'")or die("erro no delete remover pedido do cliente ag");
+
+		$removerQtdComposto = mysqli_query($con,"DELETE FROM `sistemas_ag`.`qtd_composto` WHERE `num_pedido` = '".$pedido."'")or die("erro no delete remover qtd composta");
+										
+		$removerAgenda = mysqli_query($con,"DELETE FROM `sistemas_ag`.`agendamento_ag` WHERE `num_pedido` = '".$pedido."'")or die("erro no delete agenda ag remover");
+		
+		$removerAgendaHist = mysqli_query($con,"DELETE FROM `sistemas_ag`.`agendamento_hist` WHERE `num_pedido` = '".$pedido."'")or die("erro no delete agenda hist remover");
+		
+		$removerColeta = mysqli_query($con,"DELETE FROM `sistemas_ag`.`coleta_ag` WHERE `num_pedido` = '".$pedido."'")or die("erro no delete coleta ag remover");
+		
+		$removerColetaHist = mysqli_query($con,"DELETE FROM `sistemas_ag`.`coleta_ag_hist` WHERE `num_pedido` = '".$pedido."'")or die("erro no delete coleta hist remover");
+		
+		$removerColetaStatus = mysqli_query($con,"DELETE FROM `sistemas_ag`.`coleta_status` WHERE `num_pedido` = '".$pedido."'")or die("erro no delete coleta status remover");
+			
+		$removerOrdem = mysqli_query($con,"DELETE FROM `sistemas_ag`.`coleta_status` WHERE `num_pedido` = '".$pedido."'")or die("erro no delete ordem coleta remover");
+		
+		$verificaVeiculo = mysqli_query($con,"SELECT num_pedido, tipo FROM `sistemas_ag`.`veiculos_ag` where (id_veiculo = '".$pedido."' or num_pedido = '".$pedido."')")or die("erro no select verificar veiculo");
+		$qtdVeiculos = mysqli_num_rows($verificaVeiculo);
+		if($qtdVeiculos === 0){
+			$removerHist = mysqli_query($con,"DELETE FROM `sistemas_ag`.`clientes_ag_hist` WHERE `num_pedido` = '".$pedido."'")or die("erro no delete remover hist 1");
+		}else{
+			$codVeiculo = mysqli_fetch_array($verificaVeiculo);
+			$id_veiculo = $codVeiculo['num_pedido'];
+			$tp_veiculo = $codVeiculo['tipo'];
+			$removerHist = mysqli_query($con,"DELETE FROM `sistemas_ag`.`clientes_ag_hist` WHERE `num_pedido` = '".$id_veiculo."'")or die("erro no delete remover hist 2");
+			
+			if($tp_veiculo === "PED"){
+				$removerCodUnit = mysqli_query($con,"DELETE FROM `sistemas_ag`.`codigo_unico` WHERE codigo = '".substr($pedido,8)."'")or die("erro no select removerCodUnit");
+			}
 		}
 		
+		$removerVeiculo = mysqli_query($con,"DELETE FROM `sistemas_ag`.`veiculos_ag` WHERE (id_veiculo = '".$pedido."' or num_pedido = '".$pedido."')")or die("erro no delete remover veiculo");
+			
+		
+		if($remover && $removerHist && $removerAgenda && $removerAgendaHist && $removerColeta && $removerColetaHist && $removerColetaStatus && $removerVeiculo && $removerOrdem){
+			echo "1";
+		}else{
+			echo "0";
+		}
 		
 	}	
 ?>
