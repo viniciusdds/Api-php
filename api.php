@@ -2269,7 +2269,22 @@
 			echo "1";
 		}else{
 			echo "0";
-		}
-		
+		}	
 	}	
+	
+	if($action == "liberarStatus"){
+		$num_pedido = $_REQUEST['num_pedido'];
+		
+		//Tabela de Histórico
+		$update = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag_hist` SET `status`='2' WHERE `num_pedido`='".$num_pedido."'")or die("erro no update de status");
+		
+		//Tabela Principal
+		$update = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag` SET `status`='2' WHERE `num_pedido`='".$num_pedido."'")or die("erro no update de status");
+		
+		if($update){
+			echo "1";
+		}else{
+			echo "0";
+		}
+	}
 ?>
