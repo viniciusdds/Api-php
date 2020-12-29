@@ -1069,15 +1069,13 @@
 							}
 						}
 				}else{
-					if(substr($cub['CUBAGEM'],0,1) == ","){
-						$cubagem = "0".$cub['CUBAGEM'];
+					if(isset($cub['CUBAGEM'])){
+						$cubagem = str_replace(",",".",$cub['CUBAGEM']);
 					}else{
-						$cubagem = $cub['CUBAGEM'];
+						$cubagem = '0';
 					}
 					
-					if(isset($cubagem)){
-						$cubagem = str_replace(",",".",$cubagem);
-					}
+					//echo trim($row['NOTA_FISCAL'])." - ".trim($row['LOTE_SERIAL'])." - ".trim($row['PRODUTO'])." - ".trim($row['LOTE'])." - ".utf8_encode(trim($row['MEDIDA']))." - ".$cnpj." - ".$cubagem." - ".round($estoque)."<br>";
 					
 						//Insert de quantidade
 						$insertU = mysqli_query($con,"INSERT INTO `sistemas_ag`.`lista_qtd_ag` 
@@ -1108,7 +1106,7 @@
 																	  qtd_total = ".round($estoque).",
 																	  lote = '".trim($row['LOTE'])."',
 																	  unid_medida = '".utf8_encode(trim($row['MEDIDA']))."',
-																	  cubagem = ".$cubagem."")or die(mysqli_error($con));
+																	  cubagem = ".$cubagem."")or die("ERROR 2 ".mysqli_error($con));
 							
 				}
 			}
