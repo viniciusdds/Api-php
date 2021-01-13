@@ -43,19 +43,21 @@
 	
 	    $db_data = array();
 		
-		$sql = mysqli_query($con,"select 	
-									 tb_data,
-									 tb_cnpj,
-									 mid(tb_empresa,1,20) tb_empresa,
-									 tb_nome,
-									 tb_cpf,
-									 tb_senha,
-									 tb_email,
-									 tb_ativado,
-									 tb_nivel_usuario,
-									 logado,
-									 tb_solicitacao
-								  from loginbase.new_usuarios_ag where tb_cpf = '".$usuario."' and tb_senha = '".$senha."'");
+		$sql = mysqli_query($con,"select 
+                                    count(*) linhas, 		
+									tb_data,
+									tb_cnpj,
+									mid(tb_empresa,1,20) tb_empresa,
+									mid(tb_nome,1, 20) tb_nome,
+									tb_cpf,
+									tb_senha,
+									tb_email,
+									tb_ativado,
+									tb_nivel_usuario,
+									logado,
+									tb_solicitacao
+								  from loginbase.new_usuarios_ag where tb_cpf = '".$usuario."' and tb_senha = '".$senha."'
+								  group by tb_cpf");
 		$rows = mysqli_num_rows($sql);
 		if($rows > 0){
 			$db_data['resp'] = "1";
@@ -195,7 +197,7 @@
 					$mail->Body = "<html><body>".$mensagem."</body></html>"; 
 					$retorno = $mail->Send();
 					if($retorno){
-						echo 'E-mail enviado com sucesso!';
+						echo '1';
 						header("Content-Type: text/html; charset=ISO-8859-1");
 					}else{
 						echo 'Erro ao enviar e-mail: '.$mail->ErrorInfo;
@@ -1568,6 +1570,7 @@
 			
 		
 		if($remover && $removerHist && $removerAgenda && $removerAgendaHist && $removerColeta && $removerColetaHist && $removerColetaStatus && $removerVeiculo && $removerOrdem){
+			$limpar = mysqli_query($con,"truncate sistemas_ag.lista_gerado")or die(mysqli_error($con));	
 			echo "1";
 		}else{
 			echo "0";
@@ -1603,7 +1606,10 @@
     						 sistemas_ag.clientes_ag a
         						LEFT JOIN
     						 sistemas_ag.veiculos_ag b ON a.num_pedido = b.num_pedido
-    						 where a.status = '2' and a.cnpj = '".$cnpj."' and b.num_pedido is null")or die(mysqli_error($con));		
+    						 where a.status = '2' 
+							 and a.num_pedido not like '%.%' 
+                             and a.num_pedido not like '%-%'
+							 and a.cnpj = '".$cnpj."' and b.num_pedido is null")or die(mysqli_error($con));		
 		while($result = mysqli_fetch_array($sql)){
 			$db_data[] = $result;
 		}
@@ -1612,81 +1618,121 @@
 	
 	//Aqui adiciono os pedidos que vai ser unificados
 	if($action == "unirPedidos"){
-		$origin = array("[","]");
-		$destiny = array("","");
-		
-		$cnpj = $_REQUEST['cnpj'];
-		$perfil = $_REQUEST['perfil'];
-		$num_pedido = str_replace($origin,$destiny,$_REQUEST['num_pedido']);
-		
-		if($perfil == '1'){
-			$client = $cnpj;
-		}else{
-			$buscaCli = mysqli_query($con,"select distinct cnpj from sistemas_ag.clientes_ag where num_pedido = '".$num_pedido."'")or die(mysqli_error($con));
-			$returnCli = mysqli_fetch_array($buscaCli);
-			$client = $returnCli['cnpj'];
-		}
-		
-		$codigoUnico = substr(uniqid(rand()), 0, 4);
-		
-		//Aqui verifico se o código acima já foi usado
-		$verificaCodigo = mysqli_query($con,"select codigo from sistemas_ag.codigo_unico where codigo = '".$codigoUnico."'")or die("erro no select codigo unico");
-		
-		//Aqui verifico o retorno da query acima
-		$resultCodigo = mysqli_num_rows($verificaCodigo);
-		if($resultCodigo > 0){
-			$novoCodigo = substr(uniqid(rand()), 0, 4);
-			$numbers = $novoCodigo;
-		}else{
-			$insertCodigo = mysqli_query($con,"insert into sistemas_ag.codigo_unico (codigo) values ('".$codigoUnico."')")or die("erro no insert codigo unico");
-			$numbers = $codigoUnico;
-		}
-		
-		$prefix = substr($num_pedido,0,6);
-		$veiculo_id = $prefix.".U".$numbers;
-		
-		$qtdVirgula = substr_count($num_pedido,",");
-		if($qtdVirgula > 0){
-			$pedido = explode(",",$num_pedido);
+			$origin = array("[","]");
+			$destiny = array("","");
 			
-			for($i=0; $i <= $qtdVirgula; $i++){
-				$insert = mysqli_query($con,"insert into sistemas_ag.veiculos_ag (cnpj,num_pedido,qtd_veiculos,id_veiculo,tipo,cliente) values ('".$cnpj."','".trim($pedido[$i])."',1,'".$veiculo_id."','PED','".$client."')")or die(mysqli_error($con));
-				//Pega o id_veiculo para unificar os pedidos a um veículo
-				$pegaId = mysqli_query($con,"select id_veiculo from sistemas_ag.veiculos_ag where num_pedido = '".trim($pedido[$i])."'")or die("erro no select pegaId");
+			$cnpj = $_REQUEST['cnpj'];
+			$perfil = $_REQUEST['perfil'];
+			$num_pedido = str_replace($origin,$destiny,$_REQUEST['num_pedido']);
+			
+			if($perfil == '1'){
+				$client = $cnpj;
+			}else{
+				$buscaCli = mysqli_query($con,"select distinct cnpj from sistemas_ag.clientes_ag where num_pedido = '".$num_pedido."'")or die(mysqli_error($con));
+				$returnCli = mysqli_fetch_array($buscaCli);
+				$client = $returnCli['cnpj'];
+			}
+			
+			$codigoUnico = substr(uniqid(rand()), 0, 4);
+			
+			//Aqui verifico se o código acima já foi usado
+			$verificaCodigo = mysqli_query($con,"select codigo from sistemas_ag.codigo_unico where codigo = '".$codigoUnico."'")or die("erro no select codigo unico");
+			
+			//Aqui verifico o retorno da query acima
+			$resultCodigo = mysqli_num_rows($verificaCodigo);
+			if($resultCodigo > 0){
+				$novoCodigo = substr(uniqid(rand()), 0, 4);
+				$numbers = $novoCodigo;
+			}else{
+				$insertCodigo = mysqli_query($con,"insert into sistemas_ag.codigo_unico (codigo) values ('".$codigoUnico."')")or die("erro no insert codigo unico");
+				$numbers = $codigoUnico;
+			}
+			
+			$prefix = substr($num_pedido,0,6);
+			$veiculo_id = $prefix.".U".$numbers;
+			
+			$qtdVirgula = substr_count($num_pedido,",");
+			if($qtdVirgula > 0){
+				$pedido = explode(",",$num_pedido);
+				
+				for($i=0; $i <= $qtdVirgula; $i++){
+					
+					//echo $pedido[$i]."<br>";
+					
+					
+					$insert = mysqli_query($con,"insert into sistemas_ag.veiculos_ag (cnpj,num_pedido,qtd_veiculos,id_veiculo,tipo,cliente) values ('".$cnpj."','".trim($pedido[$i])."',1,'".$veiculo_id."','PED','".$client."')")or die(mysqli_error($con));
+					//Pega o id_veiculo para unificar os pedidos a um veículo
+					$pegaId = mysqli_query($con,"select id_veiculo from sistemas_ag.veiculos_ag where num_pedido = '".trim($pedido[$i])."'")or die("erro no select pegaId");
+					$rowId = mysqli_num_rows($pegaId);
+					if($rowId > 0){
+						$returnId = mysqli_fetch_array($pegaId);
+						$id_veiculo = $returnId['id_veiculo'];
+						$pegaPedido = mysqli_query($con,"select num_pedido from sistemas_ag.veiculos_ag where id_veiculo = '".$id_veiculo."'")or die(mysqli_error($con));
+						while($returnPedido = mysqli_fetch_array($pegaPedido)){
+							$updatePedido = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag` SET `num_pedido`='".$id_veiculo."', time_stamp=now() WHERE num_pedido = '".$returnPedido['num_pedido']."';")or die("erro no updatePedido");
+						}
+					}
+					
+					
+				}		
+			}else{
+				$pedido = $num_pedido;
+				
+				$insert = mysqli_query($con,"insert into sistemas_ag.veiculos_ag (cnpj,num_pedido,qtd_veiculos,id_veiculo,tipo,cliente) values ('".$cnpj."','".$pedido."',1,'".$veiculo_id."','PED','".$client."')")or die(mysqli_error($con));
+				$pegaId = mysqli_query($con,"select id_veiculo from sistemas_ag.veiculos_ag where num_pedido = '".$pedido."'")or die("erro no select pegaId");
 				$rowId = mysqli_num_rows($pegaId);
 				if($rowId > 0){
 					$returnId = mysqli_fetch_array($pegaId);
 					$id_veiculo = $returnId['id_veiculo'];
 					$pegaPedido = mysqli_query($con,"select num_pedido from sistemas_ag.veiculos_ag where id_veiculo = '".$id_veiculo."'")or die(mysqli_error($con));
 					while($returnPedido = mysqli_fetch_array($pegaPedido)){
-						$updatePedido = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag` SET `num_pedido`='".$pedido[$i]."', time_stamp=now() WHERE num_pedido = '".$returnPedido['num_pedido']."';")or die("erro no updatePedido");
+						$updatePedido = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag` SET `num_pedido`='".$id_veiculo."', time_stamp=now() WHERE num_pedido = '".$returnPedido['num_pedido']."';")or die("erro no updatePedido");
 					}
 				}
-			}		
-		}else{
-			$pedido = $num_pedido;
-			$insert = mysqli_query($con,"insert into sistemas_ag.veiculos_ag (cnpj,num_pedido,qtd_veiculos,id_veiculo,tipo,cliente) values ('".$cnpj."','".$pedido."',1,'".$veiculo_id."','PED','".$client."')")or die(mysqli_error($con));
-			$pegaId = mysqli_query($con,"select id_veiculo from sistemas_ag.veiculos_ag where num_pedido = '".$pedido."'")or die("erro no select pegaId");
-			$rowId = mysqli_num_rows($pegaId);
-			if($rowId > 0){
-				$returnId = mysqli_fetch_array($pegaId);
-				$id_veiculo = $returnId['id_veiculo'];
-				$pegaPedido = mysqli_query($con,"select num_pedido from sistemas_ag.veiculos_ag where id_veiculo = '".$id_veiculo."'")or die(mysqli_error($con));
-				while($returnPedido = mysqli_fetch_array($pegaPedido)){
-					$updatePedido = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag` SET `num_pedido`='".$pedido."', time_stamp=now() WHERE num_pedido = '".$returnPedido['num_pedido']."';")or die("erro no updatePedido");
-				}
+			}
+				
+			if($insert){	
+				$limpar = mysqli_query($con,"truncate sistemas_ag.lista_gerado")or die(mysqli_error($con));	
+				//buscarPedidos($perfil, $cnpj, $con, $conAG);
+				echo "1";
+			}else{
+				echo "0";
 			}
 		}
-			
-		if($insert){	
-			$limpar = mysqli_query($con,"truncate sistemas_ag.lista_gerado")or die(mysqli_error($con));	
-			buscarPedidos($perfil, $cnpj, $con, $conAG);
-			echo "1";
-		}else{
-			echo "0";
-		}
 		
-	}
-	
+		//Aqui eu segmento os pedidos
+		if($action == "separarPedido"){
+				$cnpj = $_REQUEST['cnpj'];
+				$dataSecurity = date('ymdHis');
+				$quantity = $_REQUEST['quantity'];
+				
+				$query = mysqli_query($con,"select num_pedido,  mid(num_pedido,1,4) prefix from sistemas_ag.veiculos_ag where cnpj = '".$cnpj."' and (id_veiculo is null or id_veiculo = '' or id_veiculo = '--') and (tipo = 'VEI' or tipo is null or tipo = '') limit 1")or die("erro no select query busca pedido2");
+				$result = mysqli_fetch_array($query);
+				$rows = mysqli_num_rows($query);
+				
+				
+				if($rows > 0){
+					for($i=1;$i<=$quantity;$i++){
+						$pedido_id = $result['num_pedido']."-".$i;
+						$veiculo_id = $result['prefix'].$dataSecurity;
+						$inserir = mysqli_query($con,"insert into sistemas_ag.veiculos_ag (cnpj,num_pedido,qtd_veiculos,id_veiculo,tipo) values ('".$cnpj."','".$pedido_id."',1,'".$veiculo_id."','VEI') on duplicate key update cnpj='".$cnpj."', num_pedido='".$pedido_id."', qtd_veiculos=1, id_veiculo = '".$veiculo_id."'")or die("erro no insert do cadastro do id veiculo2");
+						if($inserir){	
+							//Carrega o estoque com o novo pedido
+							$carregaEstoque = mysqli_query($con,"INSERT INTO sistemas_ag.clientes_ag (num_pedido,nota_fiscal,lote_serial,produto,qtd_disp,lote,unid_medida,pedido,nome_cli,cnpj,endereco,numero,bairro,cep_cli,cidade,cod_id,email_cli,tel_cli,status,palete,cubagem,auth,qtd_composto,forma)
+							SELECT '".$pedido_id."',nota_fiscal,lote_serial,produto,qtd_disp,lote,unid_medida,pedido/".$quantity.",nome_cli,cnpj,endereco,numero,bairro,cep_cli,cidade,cod_id,email_cli,tel_cli,status,palete,cubagem/".$quantity.",auth,qtd_composto,forma FROM sistemas_ag.clientes_ag_hist where num_pedido = '".$result['num_pedido']."'")or die("erro no select carregaEstoque");
+						}
+					}
+					$remove = mysqli_query($con,"delete from sistemas_ag.veiculos_ag where num_pedido = '".$result['num_pedido']."'")or die("erro no delete remove pedido unico");
+					$remove = mysqli_query($con,"delete from sistemas_ag.clientes_ag where num_pedido = '".$result['num_pedido']."'")or die("erro no delete remove pedido unico");
+					if($inserir){
+						echo "ADICIONADO COM SUCESSO";
+					}else{
+						echo "ERRO AO VINCULAR";
+					}
+				}else{
+					echo "NÃO TEM PEDIDOS MARCADOS";
+				}
+		
+		}
 	
 ?>
