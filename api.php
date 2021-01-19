@@ -15,8 +15,8 @@
 	$passAG = "T3cn1c05p";
 	
 	//Aqui pego os dados do cliente na base da Alcis para inserir na tabela clienteAG do Mysql
-	//$tnsAG = "(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=172.20.220.43)(PORT=1521)) (CONNECT_DATA=(SID=alcisagprd)))";
-	$tnsAG = "(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=172.20.220.42)(PORT=1521)) (CONNECT_DATA=(SID=ALCISAGHOMO)))";
+	$tnsAG = "(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=172.20.220.43)(PORT=1521)) (CONNECT_DATA=(SID=alcisagprd)))";
+	//$tnsAG = "(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=172.20.220.42)(PORT=1521)) (CONNECT_DATA=(SID=ALCISAGHOMO)))";
 	try {
 		$conAG = new PDO('oci:dbname='.$tnsAG,$userAG,$passAG);
 		$conAG->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -470,7 +470,7 @@
 		$id = 0;	
 		$pesq->execute();
 		$rows = $pesq->fetch();
-		
+	
 		if($rows > 0){
 					$pesq->execute();							
 					while($row = $pesq->fetch()){
@@ -587,10 +587,14 @@
 									$test[] = $countUZ['palete'];
 								}
 								
-								if(substr($cub['CUBAGEM'],0,1) == ","){
-									$cubagem = "0".$cub['CUBAGEM'];
+								if($cub['CUBAGEM']){
+									if(substr($cub['CUBAGEM'],0,1) == ","){
+										$cubagem = "0".$cub['CUBAGEM'];
+									}else{
+										$cubagem = $cub['CUBAGEM'];
+									}
 								}else{
-									$cubagem = $cub['CUBAGEM'];
+									$cubagem = 0;
 								}
 								
 								if(!in_array($row['UZ'],$test)){
