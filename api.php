@@ -1709,6 +1709,29 @@
 				$cnpj = $_REQUEST['cnpj'];
 				$dataSecurity = date('ymdHis');
 				$quantity = $_REQUEST['quantity'];
+				$perfil = $_REQUEST['perfil'];
+				$num_pedido = $_REQUEST['num_pedido'];
+				
+				if($perfil == '2'){
+					$busClient = mysqli_query($con, "SELECT 
+    													cnpj_cli
+													FROM
+    													sistemas_ag.cad_transp_ag a
+    													inner join
+    													sistemas_ag.clientes_ag b
+    													on a.cnpj_cli = b.cnpj
+													WHERE
+												cnpj_transp = '".$cnpj."'
+												and b.num_pedido = '".$num_pedido."'
+												group by cnpj_cli")or die(mysqli_error($con));
+					
+					$resClient = mysqli_fetch_array($busClient);					
+					$client = $resClient['cnpj_cli'];
+				}else{
+					$client = $cnpj;
+				}
+				
+				
 				
 				$query = mysqli_query($con,"select num_pedido,  mid(num_pedido,1,4) prefix from sistemas_ag.veiculos_ag where cnpj = '".$cnpj."' and (id_veiculo is null or id_veiculo = '' or id_veiculo = '--') and (tipo = 'VEI' or tipo is null or tipo = '') limit 1")or die("erro no select query busca pedido2");
 				$result = mysqli_fetch_array($query);
@@ -1716,6 +1739,8 @@
 				
 				
 				if($rows > 0){
+				
+		
 					for($i=1;$i<=$quantity;$i++){
 						$pedido_id = $result['num_pedido']."-".$i;
 						$veiculo_id = $result['prefix'].$dataSecurity;
@@ -1729,12 +1754,37 @@
 					$remove = mysqli_query($con,"delete from sistemas_ag.veiculos_ag where num_pedido = '".$result['num_pedido']."'")or die("erro no delete remove pedido unico");
 					$remove = mysqli_query($con,"delete from sistemas_ag.clientes_ag where num_pedido = '".$result['num_pedido']."'")or die("erro no delete remove pedido unico");
 					if($inserir){
-						echo "ADICIONADO COM SUCESSO";
+						// "ADICIONADO COM SUCESSO";
+						echo "1";
 					}else{
-						echo "ERRO AO VINCULAR";
+						// "ERRO AO VINCULAR";
+						echo "0";
 					}
 				}else{
-					echo "NÃO TEM PEDIDOS MARCADOS";
+					$insert_status = mysqli_query($con,"insert into sistemas_ag.veiculos_ag (cnpj,num_pedido,qtd_veiculos,cliente) values ('".$cnpj."','".$num_pedido."',1,'".$client."')")or die("erro no insert veiculo");
+					
+					if($insert_status){
+						for($i=1;$i<=$quantity;$i++){
+							$pedido_id = $num_pedido."-".$i;
+							$veiculo_id = substr($num_pedido,0,4).$dataSecurity;
+							$inserir = mysqli_query($con,"insert into sistemas_ag.veiculos_ag (cnpj,num_pedido,qtd_veiculos,id_veiculo,tipo,cliente) values ('".$cnpj."','".$pedido_id."',1,'".$veiculo_id."','VEI','".$client."') on duplicate key update cnpj='".$cnpj."', num_pedido='".$pedido_id."', qtd_veiculos=1, id_veiculo = '".$veiculo_id."'")or die("erro no insert do cadastro do id veiculo2");
+							if($inserir){	
+								//Carrega o estoque com o novo pedido
+								$carregaEstoque = mysqli_query($con,"INSERT INTO sistemas_ag.clientes_ag (num_pedido,nota_fiscal,lote_serial,produto,qtd_disp,lote,unid_medida,pedido,nome_cli,cnpj,endereco,numero,bairro,cep_cli,cidade,cod_id,email_cli,tel_cli,status,palete,cubagem,auth,qtd_composto,forma)
+								SELECT '".$pedido_id."',nota_fiscal,lote_serial,produto,qtd_disp,lote,unid_medida,pedido/".$quantity.",nome_cli,cnpj,endereco,numero,bairro,cep_cli,cidade,cod_id,email_cli,tel_cli,status,palete,cubagem/".$quantity.",auth,qtd_composto,forma FROM sistemas_ag.clientes_ag_hist where num_pedido = '".$num_pedido."'")or die("erro no select carregaEstoque");
+							}
+						}
+						$remove = mysqli_query($con,"delete from sistemas_ag.veiculos_ag where num_pedido = '".$num_pedido."'")or die("erro no delete remove pedido unico");
+						$remove = mysqli_query($con,"delete from sistemas_ag.clientes_ag where num_pedido = '".$num_pedido."'")or die("erro no delete remove pedido unico");
+						$limpa = mysqli_query($con,"truncate sistemas_ag.lista_gerado")or die(mysqli_error($con));
+						if($inserir){
+							// "ADICIONADO COM SUCESSO";
+							echo "1";
+						}else{
+							// "ERRO AO VINCULAR";
+							echo "0";
+						}	
+					}
 				}
 		
 		}

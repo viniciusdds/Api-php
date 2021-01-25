@@ -205,7 +205,7 @@
 														or lote_serial like '%".$busca."%')
 														and a.status = '2' group by a.num_pedido,produto,lote_serial,lote,nota_fiscal)
 														order by status asc, statusb asc, timestamp asc,  mid(num_pedido,7) asc, mid(num_pedido,1) asc, lote asc limit 200")or die("erro no select verifica pedido");			
-							}else{
+			}else{
 								//Perfil Transportadora
 								$vinculo = "1";
 								
@@ -443,7 +443,7 @@
 								$pedidoPermitido1[] = "";
 								$pedidoPermitido2[] = "";
 							}
-					}
+			}
 					
 					$check = mysqli_num_rows($sql);
 					
@@ -673,7 +673,7 @@
 							$queryPedidos = mysqli_query($con,"select  
 															num_pedido,
 															group_concat(DISTINCT '(',nota_fiscal,' - ', produto,' - ', lote,'\n', cubagem,' - ', unid_medida,' - ', pedido,')\n\n' ORDER BY lote SEPARATOR '') infoES,
-															status,
+															max(status) status,
 															data
 														from sistemas_ag.lista_gerado 
 														where cnpj = '".$cnpj."'
@@ -684,7 +684,7 @@
 							$queryPedidos = mysqli_query($con,"select  
 															num_pedido,
 															group_concat(DISTINCT '(',nota_fiscal,' - ', produto,' - ', lote,'\n', cubagem,' - ', unid_medida,' - ', pedido,')\n\n' ORDER BY lote SEPARATOR '') infoES,
-															status,
+															max(status) status,
 															data
 														from sistemas_ag.lista_gerado 
 														where cnpj = '".$cnpj."'
