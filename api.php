@@ -1600,7 +1600,7 @@
 	
 	//Aqui busco os pedidos que possa ser unificados
 	if($action == "buscarVeiculos"){
-		$nivel = $_REQUEST['nivel'];
+		$nivel = $_REQUEST['perfil'];
         $cnpj = $_REQUEST['cnpj'];
 		$db_data = array();
 
