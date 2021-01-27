@@ -1788,6 +1788,250 @@
 				}
 		}
 		
+		//Verifica se a data e hora já tem 6 ou mais veiculos
+		if($action == "ChecaDataHora"){
+			$date = $_REQUEST['date'];
+			
+			$sql = mysqli_query($con,"SELECT
+    									count(*) linhas,
+										mid(a.data,1,10) data,
+										trim(mid(a.data,11)) hora,
+    									case when hora is null then '0' else hora end Indisponivel
+									 FROM sistemas_ag.agendamento_ag a
+ 										  left join
+ 										  sistemas_ag.data_block b
+ 									  on trim(mid(a.data,11,3)) = b.hora and a.data = b.data
+									  where mid(a.data,1,10) = '".$date."'
+									  group by a.data")or die(mysqli_error($con));
+									  
+			
+				$db_data = array();
+				while($result = mysqli_fetch_array($sql)){
+					$db_data[] = $result;
+				}
+				
+				echo json_encode($db_data);	
+		}
 		
+		//Retorna a lista de transportadoras do cliente		
+		if($action == "listTransp"){
+			
+			$cnpjCli = $_REQUEST['cnpjCli'];
+			
+			$sql = mysqli_query($con,"SELECT 
+										cnpj_transp,
+										razao_social
+									  FROM
+										sistemas_ag.cad_transp_ag
+									  WHERE
+										cnpj_cli = '".$cnpjCli."'
+										")or die(mysqli_error($con));
+			
+			$db_data = array();
+			while($result = mysqli_fetch_array($sql)){
+				$db_data[] = $result;
+			}
+				
+			echo json_encode($db_data);	
+		}
+
+		//Função para cadastrar o agendamento
+		if($action == "agendamento"){
+			
+			$data = $_REQUEST['data']; //data
+			$pedidos = $_REQUEST['num_pedido'];
+			$cnpj = $_REQUEST['cnpj'];
+			$cliente = $_REQUEST['cliente'];
+			$clientes = $_REQUEST['cliente'];
+			
+			$cnpj_transp = isset($_REQUEST['cnpj_transp']) ? $_REQUEST['cnpj_transp'] : "";
+			$nome_transp = isset($_REQUEST['nome_transp']) ? $_REQUEST['nome_transp'] : "";
+			
+			$ajudante = $_REQUEST['ajudante'];
+
+
+            //Pegar do php
+			$endereco = $_REQUEST['endereco'];
+			$numero = $_REQUEST['numero'];
+			$bairro = $_REQUEST['bairro'];
+			$cep_cli = $_REQUEST['cep_cli'];
+			$cidade = $_REQUEST['cidade'];
+			$cod_cli = $_REQUEST['cod_cli'];
+			$email_cli = $_REQUEST['email_cli'];
+
+			//Verifica se está flegado sem processo
+			$pegaId2 = mysqli_query($con,"select id_veiculo, num_pedido, tipo, cliente from sistemas_ag.veiculos_ag where (num_pedido = '".$pedidos."' or id_veiculo = '".$pedidos."')")or die("erro no select pegaId");
+			$returnId2 = mysqli_fetch_assoc($pegaId2);
+			if($returnId2['id_veiculo'] == "--"){
+				$limpaVeiculo = mysqli_query($con,"DELETE FROM `sistemas_ag`.`veiculos_ag` WHERE `num_pedido` = '".$pedidos."'")or die("erro a delete limpaVeiculo");
+			}	
+			
+			//Pega o id_veiculo para unificar os pedidos a um veículo
+			$pegaId = mysqli_query($con,"select id_veiculo, num_pedido, tipo, cliente from sistemas_ag.veiculos_ag where (num_pedido = '".$pedidos."' or id_veiculo = '".$pedidos."')")or die("erro no select pegaId");
+			$rowId = mysqli_num_rows($pegaId);
+			
+			if($rowId > 0){
+				//$blt = "Y";
+				
+				$arr1 = array();
+				$arr2 = array();
+				$returnId = mysqli_fetch_array($pegaId);
+				
+					if($returnId['tipo'] == 'PED'){
+						while($returnIds = mysqli_fetch_array($pegaId)){
+							$arr1[] = $returnIds['id_veiculo'];
+							$arr2[] = $returnIds['cliente'];
+							$qtd_pedida = 1;
+						}
+						$num_pedido = $returnId['id_veiculo'];
+						$cliente = $returnId['cliente'];
+						$qtd_pedida = 1;
+					}else{
+						$num_pedido = $returnId['num_pedido'];
+						$cliente = $returnId['cliente'];
+						$qv = explode("-",$num_pedido);
+						$rn = $qv[0];
+						
+						$pesqQtd = mysqli_query($con,"select case when sum(qtd_veiculos) is null then 0 else sum(qtd_veiculos) end soma from sistemas_ag.veiculos_ag where num_pedido like '%".$num_pedido."%'")or die("erro no select pesqQtd");
+						$qtd_ped = mysqli_fetch_array($pesqQtd);
+						$qtd_pedida = $qtd_ped['soma'];
+					}
+					
+				
+				
+				$pegaQtd = mysqli_query($con,"select sum(qtd_veiculos) qtd_veiculo from sistemas_ag.veiculos_ag where (id_veiculo = '".$num_pedido."' or num_pedido = '".$num_pedido."')")or die("erro no select pegaQtd");
+				$returnQtd = mysqli_fetch_array($pegaQtd);
+				$qtd_veiculo = intval($returnQtd['qtd_veiculo']);
+				
+			}else{	
+				//$blt = "N";
+				$returnId = mysqli_fetch_array($pegaId);
+				$num_pedido = $_REQUEST['num_pedido'];
+				$qtd_veiculo = 1;
+				$qtd_pedida = 1;
+			}
+				
+
+			$select = mysqli_query($con,"select * from sistemas_ag.coleta_ag where num_pedido = '".$num_pedido."' and cnpj_transp = '".$cnpj_transp."'")or die("erro no select verifica coleta existe");
+			$busca_end = mysqli_query($con,"select 
+											end_transp,
+											numero_transp,
+											bairro_transp,
+											cid_transp,
+											uf_transp,
+											cep_transp,
+											nome_motor,
+											cpf_motor,
+											documento_motor,
+											cnh_motor,
+											data_validade,
+											placa,
+											pl_carreta,
+											pl_bitrem,
+											pl_container,
+											tel_transp,
+											email_transp
+										from sistemas_ag.coleta_ag 
+										where cnpj_transp = '".$cnpj_transp."' and num_pedido = '".$num_pedido."'")or die("erro no select verifica endereço existe");
+			$rows = mysqli_num_rows($select);
+			if($cnpj_transp){
+				$dados = mysqli_fetch_object($busca_end);
+				if($rows > 0){
+					$update = mysqli_query($con,"UPDATE `sistemas_ag`.`coleta_ag` SET 
+					cnpj_cli='".$cnpj."', 
+					cnpj_transp='".$cnpj_transp."', 
+					nome_cli='".$cliente."', 
+					nome_transp='".$nome_transp."', 
+					data_agenda='".$valores."', 
+					time_stamp=now(), 
+					end_transp='".$dados->end_transp."', 
+					numero_transp='".$dados->numero_transp."',
+					bairro_transp='".$dados->bairro_transp."', 
+					cid_transp='".$dados->cid_transp."', 
+					uf_transp='".$dados->uf_transp."',
+					cep_transp='".$dados->cep_transp."', 
+					nome_motor='".$dados->nome_motor."', 
+					cpf_motor='".$dados->cpf_motor."',
+					documento_motor='".$dados->documento_motor."', 
+					cnh_motor='".$dados->cnh_motor."', 
+					data_validade='".$dados->data_validade."',
+					placa='".$dados->placa."', 
+					pl_carreta='".$dados->pl_carreta."', 
+					pl_bitrem='".$dados->pl_bitrem."', 
+					pl_container='".$dados->pl_container."',
+					tel_transp='".$dados->tel_transp."', 
+					email_transp='".$dados->tel_transp."'
+					WHERE `num_pedido`='".$num_pedido."';")or die("erro no update verifica coleta existe");
+				}
+			}
+			
+			
+			$consultAgenda = mysqli_query($con,"select (count(*) + ".$qtd_pedida.") total from sistemas_ag.agendamento_ag where data = '".$valores."'")or die("erro no select consultAgenda");
+			$returnAgenda = mysqli_fetch_array($consultAgenda);
+			
+			$consultPermissao = mysqli_query($con,"select case when permissao is null then '0' else permissao end permissao from sistemas_ag.cad_transp_ag where cnpj_cli = '".$cnpj."' and cnpj_transp = '".$cnpj_transp."'")or die("erro no select consultPermissao");
+			$returnPermissao = mysqli_fetch_array($consultPermissao);
+			
+			if($returnAgenda['total'] <= 6){
+				
+				if($returnId['tipo'] == 'VEI'){
+					//$y = "VEI";
+					
+					$num = explode("-",$returnId['num_pedido']);
+					$nped = $num[0];
+					$pegaSub = mysqli_query($con,"select num_pedido from sistemas_ag.veiculos_ag where num_pedido like '%".$returnId['num_pedido']."%'")or die("erro no select pegaSub");
+					
+					while($resultSub = mysqli_fetch_array($pegaSub)){
+						$agendar = mysqli_query($con,"insert into sistemas_ag.agendamento_ag 	(num_pedido,data,cnpj_cli,nome_cli,endereco,numero,bairro,cep_cli,cidade,cod_cli,cnpj_transp,transportadora,email_cli,qtd_veiculos,ajudante,status)
+						values
+						('".$resultSub['num_pedido']."','$valores','$cnpj','$clientes','$endereco','$numero','$bairro','$cep_cli','$cidade',$cod_cli,'$cnpj_transp','$nome_transp','$email_cli',".$qtd_veiculo.",'".$field."','0');")or die("error no insert do agendamento 2");
+					}
+				}elseif($returnId['tipo'] == 'PED'){
+						//$y = "PED";
+						$agendar = mysqli_query($con,"insert into sistemas_ag.agendamento_ag (num_pedido,data,cnpj_cli,nome_cli,endereco,numero,bairro,cep_cli,cidade,cod_cli,cnpj_transp,transportadora,email_cli,qtd_veiculos,ajudante,status)
+						select 
+							'$num_pedido',
+							'$valores',
+							 trim(cliente),
+							 nome_cli,
+							 endereco,
+							 numero,
+							 bairro,
+							 cep_cli,
+							 cidade,
+							 cod_id,
+							'$cnpj_transp',
+							'$nome_transp',
+							email_cli,
+							".$qtd_veiculo.",
+							'$field',
+							'0' 
+						from sistemas_ag.veiculos_ag a inner join sistemas_ag.clientes_ag_hist b
+							on a.num_pedido = b.num_pedido where id_veiculo = '".$num_pedido."' 
+							group by cliente,id_veiculo")or die("error no insert do agendamento 3");
+						
+					
+				}else{
+					//$y = "NULL";
+					$agendar = mysqli_query($con,"insert into sistemas_ag.agendamento_ag (num_pedido,data,cnpj_cli,nome_cli,endereco,numero,bairro,cep_cli,cidade,cod_cli,cnpj_transp,transportadora,email_cli,qtd_veiculos,ajudante,status)
+					values
+					('$pedidos','$valores','$cnpj','$clientes','$endereco','$numero','$bairro','$cep_cli','$cidade',$cod_cli,'$cnpj_transp','$nome_transp','$email_cli',".$qtd_veiculo.",'$field','0');")or die("error no insert do agendamento 4");
+					
+				}
+				
+				if($agendar){
+					echo "1";
+				}else{
+					echo "0";
+				}
+				
+			}else{
+				echo "2";
+			}
+			
+			
+			$conAG = null;
+			mysqli_close($con);
+		}
 	
 ?>
