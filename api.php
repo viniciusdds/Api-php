@@ -1261,10 +1261,8 @@
 	if($action == "buscarPedidos"){			
 		$categoria = $_REQUEST['nivel'];
 		$cnpj = $_REQUEST['cnpj'];
-		
-					
-		buscarPedidos($categoria, $cnpj, $con, $conAG);
-			
+						
+		buscarPedidos($categoria, $cnpj, $con, $conAG);	
 	}
 
 	//Aqui eu consulto os itens no pedido especifico para lista de edição de quantidade
@@ -2047,9 +2045,306 @@
 				echo "2";
 			}
 			
-			
 			$conAG = null;
 			mysqli_close($con);
 		}
+		
+		
+		//Aqui consulto os pedidos que foram agendados
+		if($action == "visualizarAgend"){
+			
+			$dataAtual = date('d-m-Y H:i');
+			$cnpj = $_REQUEST['cnpj'];
+			$category = $_REQUEST['perfil'];
+			
+			//Aqui verifica a categoria do usuario se é cliente 1 ou transportadora 2
+			if($category !== "1"){
+				$transp = $cnpj;
+				$busca = mysqli_query($con,"select 
+												group_concat('''',cnpj_cli,'''') as cnpj_cli, 
+												case when permissao is null then '0' else group_concat(permissao) end permissao  
+											from sistemas_ag.cad_transp_ag where cnpj_transp = '".$cnpj."'")or die("erro no select busca cliente");
+				$rows = mysqli_num_rows($busca);
+				if($rows > 0){
+					$cnpj_cli = mysqli_fetch_array($busca);
+					if($cnpj_cli[0]){
+						$cnpj = $cnpj_cli[0];
+					}else{
+						$cnpj = "SN";
+					}
+					$permissao = $cnpj_cli[1];
+				}
+			}else{
+				$busca = mysqli_query($con,"select 
+												group_concat('''',cnpj_transp,'''') as cnpj_transp, 
+												case when permissao is null then '0' else permissao end permissao
+											from sistemas_ag.cad_transp_ag where cnpj_cli = '".$cnpj."' ")or die("erro no select busca cliente");
+				$rows = mysqli_num_rows($busca);
+				if($rows > 0){
+					$cnpj_cli = mysqli_fetch_array($busca);
+					$transp = $cnpj_cli[0];
+					$permissao = $cnpj_cli[1];
+				}
+			}
+			
+			//Aqui verifico se o usuário tem mais de um cnpj
+			$pos = strpos($cnpj,"'");
+			if($pos){
+				$busca = "'".$cnpj."'";
+			}else{
+				$busca = $cnpj;
+			}
+			
+			//Aqui verifico se o usuário tem mais de uma transportadora
+			$tpos = strpos($transp,"'");
+			if($tpos){
+				$transp = "'".$transp."'";
+			}else{
+				$transp = $transp;
+			}
+			
+			if($category == "1"){
+				$whenAllow = "";
+			}else{
+				$whenAllow = " and permissao = '1' ";
+			}
+			
+			
+			
+			if($transp){
+	
+				if($category == "1"){
+					$perfil = " b.cnpj_cli ";
+					$sql = mysqli_query($con,"select 
+													num_pedido,
+													data,
+													cnpj_cli,
+													nome_cli,
+													cnpj_transp
+												  from sistemas_ag.agendamento_ag where cnpj_cli in (".$busca.") order by length(num_pedido), num_pedido asc")or die("<b style='color: white;'>erro do select de consultar agendamento</b>");
+				}else{
+					$perfil = " b.cnpj_transp ";
+					$verifTransp = "select 
+							case when cnpj_cli is null then concat('''''') else group_concat('''',cnpj_cli,'''') end clientes, 
+							case when permissao is null then '' else permissao end permissao  
+						from sistemas_ag.cad_transp_ag where cnpj_transp  = ".$transp." and permissao = '1'";
+		
+					$statusPermitido = mysqli_query($con,$verifTransp)or die("erro no select verifTransp");
+		
+					$permitido = mysqli_fetch_array($statusPermitido);
+					$permitidoRows = mysqli_num_rows($statusPermitido);
+		
+		
+					if($permitido['clientes']){
+						$per = $permitido['clientes'];
+					}else{
+						$per = "''";
+					}
+		
+						$sql = mysqli_query($con,"select 
+										a.num_pedido,
+										a.data,
+										a.cnpj_cli,
+										a.nome_cli,
+										a.cnpj_transp
+									from sistemas_ag.agendamento_ag a
+										where a.cnpj_cli in (".$busca.") 
+											  and case when cnpj_transp = '' then a.cnpj_cli in (".$per.") else a.cnpj_transp end
+											  and a.cnpj_transp in (".$transp.",'') 
+											  group by a.num_pedido
+											  order by length(a.num_pedido), a.num_pedido asc")or die("<b>erro do select de consultar agendamento 3</b>");				
+		
+				}
+		
+				$rows = mysqli_num_rows($sql);
+	
+			}else{
+				$perfil = " b.cnpj_cli ";
+				$sql = mysqli_query($con,"select 
+										num_pedido,
+										data,
+										cnpj_cli,
+										nome_cli,
+										cnpj_transp
+									  from sistemas_ag.agendamento_ag where cnpj_cli in (".$busca.") order by length(num_pedido), num_pedido asc")or die("<b style='color: white;'>erro do select de consultar agendamento</b>");
+				$rows = mysqli_num_rows($sql);
+		
+			}
+
+	
+		if($rows > 0){	
+				$id = 0;		  
+				while($result = mysqli_fetch_array($sql)){
+					extract($result);
+					$id = $id + 1;
+					
+					$diff = strtotime($data) - strtotime($dataAtual);
+					$horas = round(($diff/60/60));
+					
+					$timeLocked = mysqli_query($con,"SELECT 
+															a.tempo 
+														FROM sistemas_ag.time_clientes a 
+															 inner join sistemas_ag.cad_transp_ag b
+															 on a.cnpj = $perfil
+														where b.cnpj_cli in (".$busca.") 
+															  and b.cnpj_transp in (".$transp.")
+															  and a.rules = 'BLOC' group by a.cnpj")or die("erro no select timeLocked");
+					
+					$tempoRes = mysqli_fetch_array($timeLocked);
+					$subIn = intval($tempoRes['tempo']);
+					if($subIn == 0){
+						$sub = 6;
+					}else{
+						$sub = intval($tempoRes['tempo']);
+					}
+					
+					$pesq = $conAG->query("select 
+												iop.document NOTA_FISCAL,
+												io.id_in_out CESV,
+												TO_CHAR(time_out, 'DD/MM/YYYY HH24:MI') DATA, 
+												TO_CHAR(time_release_in, 'DD/MM/YYYY HH24:MI') CHEGADA,
+												  case 
+													when af.stat = '35' and pf.stat = '41' and max(pf.stat) = '41' then 'EM SEPARACAO'
+													when af.stat = '54' and pf.stat = '41' and max(pf.stat) = '41' then 'EM SEPARACAO' 
+													when af.stat = '54' and pf.stat = '90' and max(pf.stat) = '90' then 'EM SEPARACAO'
+													when af.stat = '35' and pf.stat = '50' and max(pf.stat) = '50' then 'EM SEPARACAO'
+													when af.stat = '55' and max(pf.stat) = '90' then 'OP SEPARADO' 
+													when af.stat = '74' and pf.stat = '90' and max(pf.stat) = '90' then 'EM CONFERENCIA' 
+													when af.stat = '74' and pf.stat = '90' and max(pf.stat) = '97' then 'EM SEPARAÇÃO' 
+													when max(pf.stat) = '97' and pf.stat = '97' and af.stat = '84' then 'PP CONFERIDO'
+													when af.stat = '75' and pf.stat = '97' and max(pf.stat) = '97' then 'PP CONFERIDO'
+													when max(pf.stat) = '97' and pf.stat = '97' and af.stat = '95' and trunc(sysdate) <=  af.time_aen then 'MATERIAL CARREGADO'
+													when max(pf.stat) = '97' and pf.stat = '97' and af.stat = '95' and trunc(sysdate) > af.time_aen then 'FINALIZADO'
+													else 'AGUARDANDO SEPARACAO' end STATUS    
+												from in_out io inner join in_out_pos iop 
+												     on io.id_in_out = iop.id_in_out
+													 left join pickauf pf
+													 on replace(replace(replace(pf.nr_auf, chr(10), ''), chr(13), ''), chr(9), '') = replace(replace(replace(iop.document, chr(10), ''), chr(13), ''), chr(9), '')
+													 left join auftraege af
+													 on replace(replace(replace(pf.nr_auf, chr(10), ''), chr(13), ''), chr(9), '') = replace(replace(replace(af.nr_auf, chr(10), ''), chr(13), ''), chr(9), '')
+												  where  io.stat <> 80 
+														/*and time_out is not null*/
+														and iop.document is not null
+														and iop.document in ('".$num_pedido."')
+														group by iop.document,io.id_in_out,time_out,time_release_in,af.stat,pf.stat,af.time_aen");
+				
+
+				$pesq->execute();
+				$lines = $pesq->fetch();
+				$pesq->execute();
+				$row = $pesq->fetch();	
+						
+					if($row['STATUS'] == "FINALIZADO"){
+						if($rows == 1){
+							$insertDados = "";
+						}
+					}else{
+						
+						$pos = strpos($num_pedido,"_");
+			
+							if($pos == ""){
+								
+								$insertDados = mysqli_query($con,"insert into sistemas_ag.lista_agendados 
+     														(
+																num_pedido, 
+																data_agend, 
+																cnpj_cli, 
+																nome_cli, 
+																sub, 
+																horas
+															)
+     														values
+     														(
+																'".$num_pedido."',
+																'".$data."',
+																'".$cnpj_cli."',
+																'".$nome_cli."',
+																".$sub.",
+																".$horas."
+															)")or die(mysqli_query($con));
+								
+				
+
+							}else{
+								$insertDados = "";
+							}
+					
+					}
+				}
+				
+				if($insertDados != ""){
+					$selectDados = mysqli_query($con,"SELECT 
+													  	num_pedido,
+														data_agend,
+														cnpj_cli,
+														nome_cli,
+														sub,
+														horas
+													  FROM sistemas_ag.lista_agendados
+													  where cnpj_cli = '".$cnpj."'
+													  group by num_pedido")or die(mysqli_error($con));
+													  
+					$db_data = array();
+						while($result = mysqli_fetch_array($selectDados)){
+							$db_data[] = $result;
+						}
+							
+					echo json_encode($db_data);	
+				}
+		}else{
+			echo "0";
+		}		
+	}
+	
+	if($action == "editarAgend"){
+			$dt_agenda = $_REQUEST['data'];
+			$hr_agenda = $_REQUEST['hora'];
+			$data_hora = $dt_agenda." ".$hr_agenda;
+			$pedidos = $_REQUEST['num_pedido'];
+			$pos = strpos($pedidos,"-");
+			if($pos !== false){
+				$ped = explode("-",$pedidos);
+				$pedido = $ped[0];
+			}else{
+				$pedido = $pedidos;
+			}
+			
+			$pegaId = mysqli_query($con,"select id_veiculo, num_pedido, tipo from sistemas_ag.veiculos_ag where num_pedido = '".$pedidos."' ")or die("erro no select pegaId");
+			$rowId = mysqli_num_rows($pegaId);
+			if($rowId > 0){
+				$returnId = mysqli_fetch_array($pegaId);
+				if($returnId['tipo'] == 'PED'){
+					$qtd_pedida = 1;
+				}else{
+					$pesqQtd = mysqli_query($con,"select sum(qtd_veiculos) soma from sistemas_ag.veiculos_ag where num_pedido like '%".$pedidos."%'")or die("erro no select pesqQtd");
+					$qtd_ped = mysqli_fetch_array($pesqQtd);
+					$qtd_pedida = $qtd_ped['soma'];
+				}
+			}else{
+				$qtd_pedida = 1;
+			}
+			
+			$consultAgenda = mysqli_query($con,"select count(*) + ".$qtd_pedida." total from sistemas_ag.agendamento_ag where data = '".$data_hora."'")or die("erro no select consultAgenda");
+			$returnAgenda = mysqli_fetch_array($consultAgenda);
+			
+			
+			if($returnAgenda['total'] <= 6){
+				//altera data e hora do agendamento 
+			
+			$historico = mysqli_query($con,"UPDATE `sistemas_ag`.`agendamento_hist` SET `data`='".$data_hora."', time_stamp = now() WHERE `num_pedido` like '%".$pedidos."%'")or die("erro no update do historico do agendamento");
+			
+				 //altera data e hora do agendamento
+				 $update = mysqli_query($con,"UPDATE `sistemas_ag`.`agendamento_ag` SET `data`='".$data_hora."', timestamp = now() WHERE `num_pedido` like '%".$pedidos."%'")or die("error no update data e hora agendamento");  
+				
+				if($update){ 
+				    $limpar = mysqli_query($con,"truncate sistemas_ag.lista_agendados")or die(mysqli_error($con));
+					echo "1"; 
+				}else{ 
+					echo "0"; 
+				}
+			}else{
+				echo "2";
+			}
+	}
 	
 ?>
