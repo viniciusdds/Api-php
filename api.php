@@ -1838,26 +1838,44 @@
 		//Função para cadastrar o agendamento
 		if($action == "agendamento"){
 			
-			$data = $_REQUEST['data']; //data
 			$pedidos = $_REQUEST['num_pedido'];
-			$cnpj = $_REQUEST['cnpj'];
+			$data = $_REQUEST['data']; //data
+			$hora = $_REQUEST['hora']; //hora
+			$cnpj = $_REQUEST['cnpjCli'];
 			$cliente = $_REQUEST['cliente'];
 			$clientes = $_REQUEST['cliente'];
 			
-			$cnpj_transp = isset($_REQUEST['cnpj_transp']) ? $_REQUEST['cnpj_transp'] : "";
-			$nome_transp = isset($_REQUEST['nome_transp']) ? $_REQUEST['nome_transp'] : "";
+			$valores = $data." ".$hora;
+			
+			$cnpj_transp = isset($_REQUEST['cnpjTransp']) ? $_REQUEST['cnpjTransp'] : "";
+			$nome_transp = isset($_REQUEST['transp']) ? $_REQUEST['transp'] : "";
 			
 			$ajudante = $_REQUEST['ajudante'];
-
+			
+			$resgatarEnd = mysqli_query($con,"SELECT 
+													endereco,
+													numero,
+													bairro,
+													cep_cli,
+													cidade,
+													cod_id,
+													email_cli
+												FROM
+													sistemas_ag.clientes_ag
+												WHERE
+													cnpj = '".$cnpj."'
+												group by cnpj")or die(mysqli_error($con));
+												
+			$returnEnd = mysqli_fetch_array($resgatarEnd);
 
             //Pegar do php
-			$endereco = $_REQUEST['endereco'];
-			$numero = $_REQUEST['numero'];
-			$bairro = $_REQUEST['bairro'];
-			$cep_cli = $_REQUEST['cep_cli'];
-			$cidade = $_REQUEST['cidade'];
-			$cod_cli = $_REQUEST['cod_cli'];
-			$email_cli = $_REQUEST['email_cli'];
+			$endereco = $returnEnd['endereco'];
+			$numero   = $returnEnd['numero'];
+			$bairro   = $returnEnd['bairro'];
+			$cep_cli  = $returnEnd['cep_cli'];
+			$cidade   = $returnEnd['cidade'];
+			$cod_cli  = $returnEnd['cod_id'];
+			$email_cli = $returnEnd['email_cli'];
 
 			//Verifica se está flegado sem processo
 			$pegaId2 = mysqli_query($con,"select id_veiculo, num_pedido, tipo, cliente from sistemas_ag.veiculos_ag where (num_pedido = '".$pedidos."' or id_veiculo = '".$pedidos."')")or die("erro no select pegaId");
@@ -1984,7 +2002,7 @@
 					while($resultSub = mysqli_fetch_array($pegaSub)){
 						$agendar = mysqli_query($con,"insert into sistemas_ag.agendamento_ag 	(num_pedido,data,cnpj_cli,nome_cli,endereco,numero,bairro,cep_cli,cidade,cod_cli,cnpj_transp,transportadora,email_cli,qtd_veiculos,ajudante,status)
 						values
-						('".$resultSub['num_pedido']."','$valores','$cnpj','$clientes','$endereco','$numero','$bairro','$cep_cli','$cidade',$cod_cli,'$cnpj_transp','$nome_transp','$email_cli',".$qtd_veiculo.",'".$field."','0');")or die("error no insert do agendamento 2");
+						('".$resultSub['num_pedido']."','$valores','$cnpj','$clientes','$endereco','$numero','$bairro','$cep_cli','$cidade',$cod_cli,'$cnpj_transp','$nome_transp','$email_cli',".$qtd_veiculo.",'".$ajudante."','0');")or die("error no insert do agendamento 2");
 					}
 				}elseif($returnId['tipo'] == 'PED'){
 						//$y = "PED";
@@ -2004,18 +2022,18 @@
 							'$nome_transp',
 							email_cli,
 							".$qtd_veiculo.",
-							'$field',
+							'$ajudante',
 							'0' 
 						from sistemas_ag.veiculos_ag a inner join sistemas_ag.clientes_ag_hist b
 							on a.num_pedido = b.num_pedido where id_veiculo = '".$num_pedido."' 
-							group by cliente,id_veiculo")or die("error no insert do agendamento 3");
+							group by cliente,id_veiculo")or die("error no insert do agendamento 3 ".mysqli_error($con));
 						
 					
 				}else{
 					//$y = "NULL";
 					$agendar = mysqli_query($con,"insert into sistemas_ag.agendamento_ag (num_pedido,data,cnpj_cli,nome_cli,endereco,numero,bairro,cep_cli,cidade,cod_cli,cnpj_transp,transportadora,email_cli,qtd_veiculos,ajudante,status)
 					values
-					('$pedidos','$valores','$cnpj','$clientes','$endereco','$numero','$bairro','$cep_cli','$cidade',$cod_cli,'$cnpj_transp','$nome_transp','$email_cli',".$qtd_veiculo.",'$field','0');")or die("error no insert do agendamento 4");
+					('$pedidos','$valores','$cnpj','$clientes','$endereco','$numero','$bairro','$cep_cli','$cidade',$cod_cli,'$cnpj_transp','$nome_transp','$email_cli',".$qtd_veiculo.",'$ajudante','0');")or die("error no insert do agendamento 4");
 					
 				}
 				

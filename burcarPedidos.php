@@ -664,6 +664,10 @@
 								}else{
 									echo "";
 								}
+								
+								if($result->data != ""){
+									$removeAgendado = mysqli_query($con,"delete from sistemas_ag.lista_gerado where num_pedido = '".$result->num_pedido."'")or die(mysqli_error($con));
+								}
 							}// fim do else status finalizado Alcis
 				
 						}// fim do While
