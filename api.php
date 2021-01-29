@@ -2396,6 +2396,18 @@
 		}	
 	}
 	
-	
+	//Consulta CNPJ da transportadora para ordem de coleta
+	if($action == "cnpjColeta"){
+		$cnpj = $_REQUEST['cnpj'];
+		
+		$sql = "select nome, cep, rua, numero, bairro, cidade, uf, tipo from sistemas_ag.cad_transp_ag a inner join sistemas_ag.transportadora_ag b on cnpj = cnpj_transp where cnpj_transp = '{$cnpj}' group by cnpj_transp";
+		$query = mysqli_query($con,$sql);
+		$db_data = array();
+		while($dados = mysqli_fetch_array($query)){
+			$db_data[] = $dados;
+		}
+		
+		echo json_encode($db_data);
+	}
 	
 ?>
