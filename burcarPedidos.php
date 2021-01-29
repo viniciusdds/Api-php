@@ -707,4 +707,263 @@
 						echo "0";
 					}// fim do if do check		
 	}
+	
+	//E-mail de realizar agendamento
+	function sendEmail($pedidos, $processo){	
+		date_default_timezone_set('America/Recife');
+		require('PHPMailer/class.phpmailer.php');
+		$con = mysqli_connect("localhost","root","","sistemas_ag")or die("<h1>Error na conexão com banco mysql</h1>");
+		mysqli_set_charset($con,"utf8");
+		//$con2 = mysqli_connect("localhost","adminwebsorocaba","VmtefuQffnq6T6US","agend_coleta")or die("<h1>Error ao conectar no banco agend_coleta</h1>");
+
+		//E-mail para informar a realização do agendamento
+		if($processo == "r"){
+			$pos = strpos($pedidos,"-");
+			if($pos !== false){
+				$ped = explode("-",$pedidos);
+				$pedido = $ped[0];
+			}else{
+				$pedido = $pedidos;
+			}
+
+			$info = mysqli_query($con,"select 
+									*, date_format(timestamp, '%d-%m-%Y %H:%i:%s') time_date, a.nome_cli, count(*) linhas 
+								   from  sistemas_ag.agendamento_ag a
+										inner join
+										 sistemas_ag.clientes_ag b
+										on a.num_pedido = b.num_pedido
+										where a.num_pedido like '%".$pedidos."%'
+										group by a.num_pedido, cnpj_cli")or die("erro no select e email");	
+			
+			$protocolo = date('dmY')."-". mt_rand();
+			
+			while($result = mysqli_fetch_object($info)){
+				
+				if($result->ajudante == '0'){
+					$ajudante = 'NÃO';
+				}else{
+					$ajudante = 'SIM';
+				}
+				
+				$historico = mysqli_query($con,"insert into sistemas_ag.agendamento_hist (num_pedido,cnpj,nome,protocolo,data,ajudante) values ('".$result->num_pedido."','".$result->cnpj_cli."','".$result->nome_cli."','".$protocolo."','".$result->data."','".$ajudante."') ON DUPLICATE KEY UPDATE cnpj = '".$result->cnpj_cli."', nome = '".$result->nome_cli."', protocolo = '".$protocolo."', data = '".$result->data."', time_stamp = now() ")or die("erro no historico do agendamento");
+			
+			
+				$nome=$result->nome_cli;
+				//$email=$result->email_cli;
+				$email="vinicius.santos@eadiaurora.com.br";
+				$subject = "AURORA TERMINAIS - AGENDAMENTO REALIZADO PARA O AG";
+				$mensagem = "<b style='color: #000080;'>AGENDAMENTO REALIZADO EM   ".$result->time_date."</b><br>";
+				$mensagem .= "<b>AGENDADO PARA:</b>&nbsp; <strong style='color: #000080;'>".$result->data."</strong><br>";
+				$mensagem .= "<b>PROTOCOLO:</b>&nbsp; <strong style='color: #000080;'>".$protocolo."</strong><br>";
+				$mensagem .= "<b>CNPJ:</b>&nbsp; <strong style='color: #000080;'>".$result->cnpj_cli."</strong><br>";
+				$mensagem .= "<b>CLIENTE:</b>&nbsp; <strong style='color: #000080;'>".$result->nome_cli."</strong><br>";
+				$mensagem .= "<b>PEDIDOS:</b>&nbsp; <strong style='color: #000080;'>".$result->num_pedido."</strong><br>";
+				$mensagem .= "<b>QUANTIDADE DE PALETES:</b>&nbsp; <strong style='color: #000080;'>".$result->linhas."</strong><br>";
+				$remontagem = ($result->auth == "1") ? "SIM" : "NÃO";
+				$mensagem .= "<b>REMONTAGEM:</b>&nbsp; <strong style='color: #000080;'>".$remontagem."</strong><br>";
+				$mensagem .= "<b>AJUDANTE:</b>&nbsp; <strong style='color: #000080;'>".$ajudante."</strong>";
+				
+				$mensagem .= '<br><br><hr><img src="http://www.eadiaurora.com.br/assinatura.jpg" width="600" height="128" alt=""/>';
+				$mensagem .= "<hr>";
+
+				$mail=new PHPMailer(); 
+				$mail->IsSMTP(); 
+				$mail->SMTPAuth=true; 
+				$mail->Port=465;
+				$mail->Host='mailssl.picture.com.br';
+				$mail->SMTPSecure = "ssl";
+				//$mail->Port=587;
+				//$mail->Host='smtp.eadiaurora.com.br';
+				$mail->Username='intranet_service@eadiaurora.com.br'; 
+				$mail->Password='!@Root@!'; 
+				$mail->SetFrom('intranet_service@eadiaurora.com.br','AGENDAMENTO REALIZADO - ');
+				$mail->AddAddress($email,$nome);
+				//$mail->Addcc('atendimento@eadiaurora.com.br');
+				/*
+				if($categoria !== "c"){
+					$mail->Addcc($result->email_cli); // Copia
+				}
+				*/
+				//$mail->AddBcc('agatha.souza@eadiaurora.com.br'); // Copia oculta
+				$mail->CharSet = 'UTF-8';
+				$mail->IsHTML(true); 
+				$mail->Subject=$subject;
+				$mail->Body = "<html><body>".$mensagem."</body></html>";
+				$imprime=$nome." ".$email."<br>";
+				if($mail->Send()){// Envia o e-mail
+					echo '1';
+					header("Content-Type: text/html; charset=ISO-8859-1");
+				}else{
+					echo 'Erro ao enviar e-mail: '.$mail->ErrorInfo;
+				}
+			}
+		//E-mail para alteração de data do agendamento	
+		}elseif($processo == "e"){
+				$pos = strpos($pedidos,"-");
+				if($pos !== false){
+					$ped = explode("-",$pedidos);
+					$pedido = $ped[0];
+				}else{
+					$pedido = $pedidos;
+				}
+				
+				$info = mysqli_query($con,"SELECT 
+												a.num_pedido,
+												a.cnpj,
+												a.data,
+												a.nome,
+												a.protocolo,
+												b.auth,
+												count(*) linhas,
+												a.ajudante,
+												b.email_cli,
+												DATE_FORMAT(a.time_stamp, '%d-%m-%Y %H:%i:%s') time_date
+											FROM
+												sistemas_ag.agendamento_hist a
+												inner join clientes_ag b
+												on a.num_pedido = b.num_pedido
+											WHERE
+												a.num_pedido LIKE '%".$pedidos."%'
+												group by a.num_pedido, a.cnpj")or die("erro no select e email");	
+				while($result = mysqli_fetch_object($info)){
+					
+					if($result->ajudante == '0'){
+						$ajudante = 'NÃO';
+					}else{
+						$ajudante = 'SIM';
+					}
+				
+					//$nome=$result->nome;
+					$nome="Vinicius Damasceno";
+					//$email=$result->email_cli;
+					$email='vinicius.santos@eadiaurora.com.br';
+					$subject = "AURORA TERMINAIS - DATA ALTERADA PARA O AGENDAMENTO AG";
+					$mensagem = "<b style='color: #000080;'>AGENDAMENTO ALTERADO EM ".$result->time_date."</b><br>";
+					$mensagem .= "<b>NOVA DATA DO AGENDAMENTO:</b>&nbsp; <strong style='color: #000080;'>".$result->data."</strong><br>";
+					$mensagem .= "<b>PROTOCOLO:</b>&nbsp; <strong style='color: #000080;'>".$result->protocolo."</strong><br>";
+					$mensagem .= "<b>CNPJ:</b>&nbsp; <strong style='color: #000080;'>".$result->cnpj."</strong><br>";
+					$mensagem .= "<b>CLIENTE:</b>&nbsp; <strong style='color: #000080;'>".$result->nome."</strong><br>";
+					$mensagem .= "<b>PEDIDO:</b>&nbsp; <strong style='color: #000080;'>".$result->num_pedido."</strong><br>";
+					$mensagem .= "<b>QUANTIDADE DE PALETES:</b>&nbsp; <strong style='color: #000080;'>".$result->linhas."</strong><br>";
+					$remontagem = ($result->auth == "1") ? "SIM" : "NÃO";
+					$mensagem .= "<b>REMONTAGEM:</b>&nbsp; <strong style='color: #000080;'>".$remontagem."</strong><br>";
+					$mensagem .= "<b>AJUDANTE:</b>&nbsp; <strong style='color: #000080;'>".$ajudante."</strong>";
+					
+					
+					$mensagem .= '<br><br><hr><img src="http://www.eadiaurora.com.br/assinatura.jpg" width="600" height="128" alt=""/>';
+					$mensagem .= "<hr>";
+
+					$mail=new PHPMailer(); 
+					$mail->IsSMTP(); 
+					$mail->SMTPAuth=true; 
+					$mail->Port=465;
+					$mail->Host='mailssl.picture.com.br';
+					$mail->SMTPSecure = "ssl";
+					$mail->Username='intranet_service@eadiaurora.com.br'; 
+					$mail->Password='!@Root@!'; 
+					$mail->SetFrom('intranet_service@eadiaurora.com.br','AGENDAMENTO ALTERADO - ');
+					$mail->AddAddress($email,$nome);
+					//$mail->Addcc('atendimento@eadiaurora.com.br');
+					//$mail->Addcc('bruno.kitagaki@eadiaurora.com.br'); // Copia
+					//$mail->AddBcc('agatha.souza@eadiaurora.com.br'); // Copia oculta
+					$mail->CharSet = 'UTF-8';
+					$mail->IsHTML(true); 
+					$mail->Subject=$subject;
+					$mail->Body = "<html><body>".$mensagem."</body></html>";
+					$imprime=$nome." ".$email."<br>";
+					if($mail->Send()){// Envia o e-mail
+						echo '1';
+						header("Content-Type: text/html; charset=ISO-8859-1");
+					}else{
+						echo 'Erro ao enviar e-mail: '.$mail->ErrorInfo;
+					}
+				}	
+		//E-mail para cancelamento do agendamento	
+		}elseif($processo == "c"){
+			$pos = strpos($pedidos,"-");
+				if($pos !== false){
+					$ped = explode("-",$pedidos);
+					$pedido = $ped[0];
+				}else{
+					$pedido = $pedidos;
+				}
+				
+				$info = mysqli_query($con,"SELECT 
+												a.num_pedido,
+												a.cnpj,
+												a.data,
+												a.nome,
+												a.protocolo,
+												b.auth,
+												count(*) linhas,
+												a.ajudante,
+												b.email_cli,
+												DATE_FORMAT(a.time_stamp, '%d-%m-%Y %H:%i:%s') time_date
+											FROM
+												sistemas_ag.agendamento_hist a
+												inner join clientes_ag b
+												on a.num_pedido = b.num_pedido
+											WHERE
+												a.num_pedido LIKE '%".$pedidos."%'
+												group by a.num_pedido, a.cnpj")or die("erro no select e email");	
+				while($result = mysqli_fetch_object($info)){
+					
+					if($result->ajudante == '0'){
+						$ajudante = 'NÃO';
+					}else{
+						$ajudante = 'SIM';
+					}
+
+					$nome="Vinicius Damasceno";
+					//$email=$result->email_cli;
+					$email='vinicius.santos@eadiaurora.com.br';
+					$subject = "AURORA TERMINAIS - AGENDAMENTO CANCELADO PARA O AG";
+					$mensagem = "<b style='color: #000080;'>AGENDAMENTO CANCELADO EM ".$result->time_date."</b><br>";
+					$mensagem .= "<b>DATA DO AGENDAMENTO:</b>&nbsp; <strong style='color: red;'>".$result->data."</strong><br>";
+					$mensagem .= "<b>PROTOCOLO:</b>&nbsp; <strong style='color: #000080;'>".$result->protocolo."</strong><br>";
+					$mensagem .= "<b>CNPJ:</b>&nbsp; <strong style='color: #000080;'>".$result->cnpj."</strong><br>";
+					$mensagem .= "<b>CLIENTE:</b>&nbsp; <strong style='color: #000080;'>".$result->nome."</strong><br>";
+					$mensagem .= "<b>PEDIDO:</b>&nbsp; <strong style='color: red;'>".$result->num_pedido."</strong><br>";
+					$mensagem .= "<b>QUANTIDADE DE PALETES:</b>&nbsp; <strong style='color: #000080;'>".$result->linhas."</strong><br>";
+					$remontagem = ($result->auth == "1") ? "SIM" : "NÃO";
+					$mensagem .= "<b>REMONTAGEM:</b>&nbsp; <strong style='color: #000080;'>".$remontagem."</strong><br>";
+					$mensagem .= "<b>AJUDANTE:</b>&nbsp; <strong style='color: #000080;'>".$ajudante."</strong>";
+					
+					
+					$mensagem .= '<br><br><hr><img src="http://www.eadiaurora.com.br/assinatura.jpg" width="600" height="128" alt=""/>';
+					$mensagem .= "<hr>";
+
+					$mail=new PHPMailer(); 
+					$mail->IsSMTP(); 
+					$mail->SMTPAuth=true; 
+					$mail->Port=465;
+					$mail->Host='mailssl.picture.com.br';
+					$mail->SMTPSecure = "ssl";
+					//$mail->Port=587;
+					//$mail->Host='smtp.eadiaurora.com.br';
+					$mail->Username='intranet_service@eadiaurora.com.br'; 
+					$mail->Password='!@Root@!'; 
+					$mail->SetFrom('intranet_service@eadiaurora.com.br','AGENDAMENTO REALIZADO - ');
+					$mail->AddAddress($email,$nome);
+					//$mail->Addcc('atendimento@eadiaurora.com.br');
+					//$mail->AddBcc('agatha.souza@eadiaurora.com.br'); // Copia oculta
+					$mail->CharSet = 'UTF-8';
+					$mail->IsHTML(true); 
+					$mail->Subject=$subject;
+					$mail->Body = "<html><body>".$mensagem."</body></html>";
+					$imprime=$nome." ".$email."<br>";
+					if($mail->Send()){// Envia o e-mail
+						echo '1';
+						header("Content-Type: text/html; charset=ISO-8859-1");
+					}else{
+						echo 'Erro ao enviar e-mail: '.$mail->ErrorInfo;
+					}
+				}
+		}
+		
+		
+		mysqli_close($con);		
+	}
+	
+	
 ?>

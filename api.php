@@ -1842,6 +1842,7 @@
 			$cnpj = $_REQUEST['cnpjCli'];
 			$cliente = $_REQUEST['cliente'];
 			$clientes = $_REQUEST['cliente'];
+			$perfil = $_REQUEST['perfil'];
 			
 			$valores = $data." ".$hora;
 			
@@ -1850,31 +1851,45 @@
 			
 			$ajudante = $_REQUEST['ajudante'];
 			
-			$resgatarEnd = mysqli_query($con,"SELECT 
-													endereco,
-													numero,
-													bairro,
-													cep_cli,
-													cidade,
-													cod_id,
-													email_cli
-												FROM
-													sistemas_ag.clientes_ag
-												WHERE
-													cnpj = '".$cnpj."'
-												group by cnpj")or die(mysqli_error($con));
-												
-			$returnEnd = mysqli_fetch_array($resgatarEnd);
+			$stid = $conAG->query("select  
+			 					distinct k.entow_id ID_CLIENTE,
+								c.entdf_dsc NAME,
+								k.entow_ent_id CNPJ,
+								ad.entdfb_str END,
+								ad.entdfb_nb NUMERO,
+								ad.entdfb_zip CEP,
+								ad.entdfb_dst BAIRRO,
+								t.entdfc_tel1 TEL,
+								ad.entdfb_city_nm CIDADE,
+								t.entdfc_email1 EMAIL
+							from entow k, entdfb ad, ENTDF c, entdfc t
+							where k.entow_ent_id = ad.entdfb_ent_id
+							and k.entow_ent_id = t.entdfc_ent_id
+							and k.entow_ent_id = c.entdf_id 
+							and k.entow_ent_id = '".$cnpj."'");
 
-            //Pegar do php
-			$endereco = $returnEnd['endereco'];
-			$numero   = $returnEnd['numero'];
-			$bairro   = $returnEnd['bairro'];
-			$cep_cli  = $returnEnd['cep_cli'];
-			$cidade   = $returnEnd['cidade'];
-			$cod_cli  = $returnEnd['cod_id'];
-			$email_cli = $returnEnd['email_cli'];
-
+	
+			$stid->execute();			
+			$row = $stid->fetch();
+			$endereco = $row['END'];
+			$numero = $row['NUMERO'];
+			$bairro = $row['BAIRRO'];
+			$cep_cli = $row['CEP'];
+			$cidade = $row['CIDADE'];
+			$cod_cli = $row['ID_CLIENTE'];
+			$email_cli = $row['EMAIL'];
+			$tel_cli = $row['TEL'];
+			
+			//$endereco = 'ROD SENADOR JOSE ERMIRIO DE MORAES';
+			//$numero = '10.2';
+			//$bairro = 'IPORANGA';
+			//$cep_cli = '18087125';
+			//$cidade = 'Sorocaba';
+			//$cod_cli = '329';
+			//$email_cli = 'COMERCIAL@EADIAURORA.COM.BR';
+			//$tel_cli = '15 32354800';			
+			
+				
 			//Verifica se está flegado sem processo
 			$pegaId2 = mysqli_query($con,"select id_veiculo, num_pedido, tipo, cliente from sistemas_ag.veiculos_ag where (num_pedido = '".$pedidos."' or id_veiculo = '".$pedidos."')")or die("erro no select pegaId");
 			$returnId2 = mysqli_fetch_assoc($pegaId2);
@@ -2028,15 +2043,18 @@
 						
 					
 				}else{
+					
+					//echo $endereco."<br>";
 					//$y = "NULL";
 					$agendar = mysqli_query($con,"insert into sistemas_ag.agendamento_ag (num_pedido,data,cnpj_cli,nome_cli,endereco,numero,bairro,cep_cli,cidade,cod_cli,cnpj_transp,transportadora,email_cli,qtd_veiculos,ajudante,status)
 					values
-					('$pedidos','$valores','$cnpj','$clientes','$endereco','$numero','$bairro','$cep_cli','$cidade',$cod_cli,'$cnpj_transp','$nome_transp','$email_cli',".$qtd_veiculo.",'$ajudante','0');")or die("error no insert do agendamento 4");
+					('$pedidos','$valores','$cnpj','$clientes','$endereco','$numero','$bairro','$cep_cli','$cidade',$cod_cli,'$cnpj_transp','$nome_transp','$email_cli',".$qtd_veiculo.",'$ajudante','0');")or die("error no insert do agendamento 4 ".mysqli_error($con));
 					
 				}
 				
 				if($agendar){
-					echo "1";
+					sendEmail($num_pedido, "r");
+					//echo "1";
 				}else{
 					echo "0";
 				}
@@ -2051,8 +2069,7 @@
 		
 		
 		//Aqui consulto os pedidos que foram agendados
-		if($action == "visualizarAgend"){
-			
+		if($action == "visualizarAgend"){		
 			$dataAtual = date('d-m-Y H:i');
 			$cnpj = $_REQUEST['cnpj'];
 			$category = $_REQUEST['perfil'];
@@ -2060,10 +2077,13 @@
 			//Aqui verifica a categoria do usuario se é cliente 1 ou transportadora 2
 			if($category !== "1"){
 				$transp = $cnpj;
+				
+				
+				
 				$busca = mysqli_query($con,"select 
 												group_concat('''',cnpj_cli,'''') as cnpj_cli, 
 												case when permissao is null then '0' else group_concat(permissao) end permissao  
-											from sistemas_ag.cad_transp_ag where cnpj_transp = '".$cnpj."'")or die("erro no select busca cliente");
+											from sistemas_ag.cad_transp_ag where cnpj_transp = '01777936000196'")or die(mysqli_error($con));
 				$rows = mysqli_num_rows($busca);
 				if($rows > 0){
 					$cnpj_cli = mysqli_fetch_array($busca);
@@ -2095,6 +2115,8 @@
 				$busca = $cnpj;
 			}
 			
+			
+			
 			//Aqui verifico se o usuário tem mais de uma transportadora
 			$tpos = strpos($transp,"'");
 			if($tpos){
@@ -2108,8 +2130,6 @@
 			}else{
 				$whenAllow = " and permissao = '1' ";
 			}
-			
-			
 			
 			if($transp){
 	
@@ -2236,6 +2256,7 @@
 						
 					if($row['STATUS'] == "FINALIZADO"){
 						if($rows == 1){
+							echo "test";
 							$insertDados = "";
 						}
 					}else{
@@ -2281,7 +2302,7 @@
 														sub,
 														horas
 													  FROM sistemas_ag.lista_agendados
-													  where cnpj_cli = '".$cnpj."'
+													  where cnpj_cli in (".$busca.")
 													  group by num_pedido")or die(mysqli_error($con));
 													  
 					$db_data = array();
@@ -2296,6 +2317,7 @@
 		}		
 	}
 	
+	//Aqui eu edito a data do agendamento
 	if($action == "editarAgend"){
 			$dt_agenda = $_REQUEST['data'];
 			$hr_agenda = $_REQUEST['hora'];
@@ -2338,7 +2360,8 @@
 				
 				if($update){ 
 				    $limpar = mysqli_query($con,"truncate sistemas_ag.lista_agendados")or die(mysqli_error($con));
-					echo "1"; 
+					sendEmail($pedidos, "e");
+					//echo "1"; 
 				}else{ 
 					echo "0"; 
 				}
@@ -2346,5 +2369,33 @@
 				echo "2";
 			}
 	}
+	
+	//Aqui eu cancelo o agendamento
+	if($action == "cancelaAgend"){	
+		$pedidos = $_REQUEST['num_pedido'];
+		$cliente = $_REQUEST['nomeCli'];
+		$data = $_REQUEST['dataAgend'];
+		$cnpj = $_REQUEST['cnpjCli'];
+		$pos = strpos($pedidos,"-");
+		if($pos !== false){
+			$ped = explode("-",$pedidos);
+			$pedido = $ped[0];
+		}else{
+			$pedido = $pedidos;
+		}
+		
+		$deletar = mysqli_query($con,"delete from sistemas_ag.agendamento_ag where num_pedido like '%".$pedidos."%'")or die("erro do delete");
+		
+		
+		if($deletar){
+			$limpar = mysqli_query($con,"truncate sistemas_ag.lista_agendados")or die(mysqli_error($con));
+			sendEmail($pedidos, "c");
+			//echo "1";
+		}else{
+			echo "0";
+		}	
+	}
+	
+	
 	
 ?>
