@@ -2400,7 +2400,37 @@
 	if($action == "cnpjColeta"){
 		$cnpj = $_REQUEST['cnpj'];
 		
-		$sql = "select nome, cep, rua, numero, bairro, cidade, uf, tipo from sistemas_ag.cad_transp_ag a inner join sistemas_ag.transportadora_ag b on cnpj = cnpj_transp where cnpj_transp = '{$cnpj}' group by cnpj_transp";
+		$sql = "SELECT 
+					nome, 
+					cep, 
+					rua, 
+					numero, 
+					bairro, 
+					cidade, 
+					uf, 
+					a.tipo,
+					nome_motor,
+					cpf_motor,
+					cnh_motor,
+					documento_motor,
+					cpf_motor,
+					data_validade,
+					placa,
+					pl_carreta,
+					pl_bitrem,
+					pl_container,
+					tel_transp,
+					email_transp,
+					c.tipo
+				FROM
+					sistemas_ag.cad_transp_ag a
+						INNER JOIN
+					sistemas_ag.transportadora_ag b ON cnpj = a.cnpj_transp
+						LEFT JOIN
+					sistemas_ag.coleta_ag c ON c.cnpj_transp =  a.cnpj_transp
+				WHERE
+					a.cnpj_transp = '{$cnpj}'
+				GROUP BY a.cnpj_transp";
 		$query = mysqli_query($con,$sql);
 		$db_data = array();
 		while($dados = mysqli_fetch_array($query)){
@@ -2516,38 +2546,43 @@
 	
 	//Informações do formulario para cadastro da coleta
 	$cnpj_transp = (trim($_REQUEST['cnpjTransp']) == "") ? trim(str_replace($origin,$destiny,$_REQUEST['cnpjTransp'])) : trim(str_replace($origin,$destiny,$_REQUEST['cnpjTransp']));
-	$tipo = (strlen(trim($_REQUEST['cnpjTransp'])) != 14) ? "EX" : "NA";
-	$nome_transp = $_REQUEST['nome_transp'];
-	$end_transp = strtoupper($_REQUEST['end_transp']);
-	$numero_transp = $_REQUEST['numero_transp'];
-	$bairro_transp = strtoupper($_REQUEST['bairro_transp']);
-	$cid_transp = strtoupper($_REQUEST['cid_transp']);
-	$uf_transp = $_REQUEST['uf_transp'];
-	$cep_transp = $_REQUEST['cep_transp'];
-	$nome_motor = $_REQUEST['nome_motor'];
-	$cpf_motor = ($_REQUEST['cpf_motor'] == "") ? "" : str_replace($origin,$destiny,$_REQUEST['cpf_motor']);
-	$cpf_gringo = ($_REQUEST['cpf_gringo'] == "") ? "" : str_replace($origin,$destiny,$_REQUEST['cpf_gringo']);
-	$cnh_motor = $_REQUEST['cnh_motor'];
-	$valid = $_REQUEST['valid'];
+	//$tipo = (strlen(trim($_REQUEST['cnpjTransp'])) != 14) ? "EX" : "NA";
+	$nome_transp = $_REQUEST['nomeTransp'];
+	$end_transp = strtoupper($_REQUEST['endTransp']);
+	$numero_transp = $_REQUEST['numTransp'];
+	$bairro_transp = strtoupper($_REQUEST['bairroTransp']);
+	$cid_transp = strtoupper($_REQUEST['cidadeTransp']);
+	$uf_transp = $_REQUEST['ufTransp'];
+	$cep_transp = $_REQUEST['cepTransp'];
+	$nome_motor = $_REQUEST['motorista'];
+	$tDoc = $_REQUEST['tipo'];
+	if($tDoc == '1'){
+		$cpf_motor = "";
+		$cpf_gringo = str_replace($origin,$destiny,$_REQUEST['doc']);
+	}else{
+		$cpf_motor = str_replace($origin,$destiny,$_REQUEST['doc']);
+		$cpf_gringo = "";
+	}
+	$cnh_motor = $_REQUEST['cnh'];
+	$valid = $_REQUEST['validade'];
 	$placa = $_REQUEST['placa'];
-	$pcarreta = $_REQUEST['pcarreta'];
-	$pbitrem = $_REQUEST['pbitrem'];
-	$container = $_REQUEST['container'];
+	$pcarreta = $_REQUEST['placaCarreta'];
+	$pbitrem = $_REQUEST['placaBitrem'];
+	$container = $_REQUEST['placaContainer'];
 	$obs = $_REQUEST['obs'];
-	$email_transp = $_REQUEST['email_transp'];
-	$tel_transp = $_REQUEST['tel_transp'];
-	$pedidos = $_REQUEST['pedidos'];
-	$val = explode(";",$pedidos);
-	
- 	$num_pedido  = $val[0];
-	$data_agenda = $val[1];
-	$cnpj_cli    = trim($val[2]);
-	$nome_cli    = $val[3];
+	$email_transp = $_REQUEST['emails'];
+	$tel_transp = $_REQUEST['tel'];
+	$num_pedido = $_REQUEST['num_pedido'];
+	$data_agenda = $_REQUEST['dataAgenda'];
+	$cnpj_cli = $_REQUEST['cnpjCli'];
+	$nome_cli = $_REQUEST['nomeCli'];
+	$categoria = $_REQUEST['perfil'];
+	$tipo = $_REQUEST['origem'];
 
 	//echo $num_pedido."<br>".$cnpj_transp."<br>";
 
 	//Verifico se o CNPJ da transportadora existe no agendamento
-	if($categoria === "c"){
+	if($categoria === "1"){
 		$verAgenda = mysqli_query($con,"select count(*) from sistemas_ag.agendamento_ag where num_pedido = '".$num_pedido."' and cnpj_transp = '".$cnpj_transp."'")or die("erro no select verAgenda 1"); 
 		$register = mysqli_fetch_row($verAgenda);
 		if($register[0] == 0){
@@ -2561,6 +2596,17 @@
 			}
 			*/
 		}
+		
+		//Vincula o cnpj da transportadora ao cliente
+		$selectTR = mysqli_query($con,"select * from sistemas_ag.cad_transp_ag where cnpj_cli = '".$cnpj_cli."' and cnpj_transp = '".$cnpj_transp."'")or die("error no select de validação");
+		$rowsTR = mysqli_num_rows($selectTR);
+		if($rowsTR == 0){
+			$insertTR = mysqli_query($con,"insert into sistemas_ag.cad_transp_ag 
+											(cnpj_cli,cnpj_transp,razao_social,nome_cli,tipo) 
+												values 
+											('".trim($cnpj_cli)."','".trim($cnpj_transp)."','".$nome_transp."','".$nome_cli."','".$tipo."')")or die("error na inserção do vinculo");
+		}
+		
 	}else{
 		/*
 		$verAgenda = mysqli_query($con,"select count(*) from sistemas_ag.agendamento_ag where num_pedido = '".$num_pedido."' and cnpj_transp = ''")or die("erro no select verAgenda 2"); 
@@ -2817,6 +2863,16 @@
 		  //altera status do agendamento
 		  $altera_status = mysqli_query($con,"UPDATE `sistemas_ag`.`agendamento_ag` SET `status`='1' WHERE `num_pedido`='".$num_pedido."'")or die("error no update status agendamento");  
 		  
+		  
+		  $sqls = mysqli_query($con,"select logotipo from sistemas_ag.transportadora_ag where CNPJ = '".$cnpj_transp."'")or die ("error no select do upload logotipo");
+		   $rows2 = mysqli_num_rows($sqls);
+		
+				if($rows2 == 0){
+					$adiciona = mysqli_query($con,"INSERT INTO sistemas_ag.transportadora_ag (CNPJ,NOME,CEP,RUA,NUMERO,BAIRRO,CIDADE,UF,TELEFONE,EMAIL, logotipo) 
+					VALUES 
+					('$cnpj_transp','$nome_transp','$cep_transp','$end_transp', '$numero_transp','$bairro_transp','$cid_transp','$uf_transp','$tel_transp','$email_transp','') ");
+				}
+		  
 		  //Aqui dá o retorno para a tela de cadastro
 		  if($insert2 && $altera_status){
 			echo "1"; 
@@ -2829,6 +2885,15 @@
 		
 		//altera status do agendamento
 		$altera_status = mysqli_query($con,"UPDATE `sistemas_ag`.`agendamento_ag` SET `status`='1'  WHERE `num_pedido`='".$num_pedido."'")or die("error no update status agendamento");  
+		
+		$sqls = mysqli_query($con,"select logotipo from sistemas_ag.transportadora_ag where CNPJ = '".$cnpj_transp."'")or die ("error no select do upload logotipo");
+		   $rows2 = mysqli_num_rows($sqls);
+		
+				if($rows2 == 0){
+					$adiciona = mysqli_query($con,"INSERT INTO sistemas_ag.transportadora_ag (CNPJ,NOME,CEP,RUA,NUMERO,BAIRRO,CIDADE,UF,TELEFONE,EMAIL, logotipo) 
+					VALUES 
+					('$cnpj_transp','$nome_transp','$cep_transp','$end_transp', '$numero_transp','$bairro_transp','$cid_transp','$uf_transp','$tel_transp','$email_transp','') ");
+				}
 		 
 		 //Aqui dá o retorno para a tela de cadastro
 		 if($update && $altera_status){
