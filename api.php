@@ -2538,6 +2538,35 @@
 		echo json_encode($db_data);
 	}
 	
+	//Aqui consulto os dados do motorista se existe
+	if($action == "dadosMotorista"){
+		$db_data = array();
+		$cpf = $_REQUEST['cpf'];
+		$param = $_REQUEST['param'];
+		
+		if($param == '1'){
+			$filter = "documento_motor = '".$cpf."'";
+		}else{
+		    $filter = "cpf_motor = '".$cpf."'";
+		}
+		
+		$sql = mysqli_query($con,"SELECT 
+										case when documento_motor = '' then cpf_motor else documento_motor end documento,
+										nome_motor,
+										cnh_motor,
+										data_validade
+									FROM
+										sistemas_ag.coleta_ag
+									WHERE ".$filter."
+										 group by cpf_motor, documento_motor")or die(mysqli_error($con));
+											
+		while($result = mysqli_fetch_array($sql)){
+			$db_data[] = $result;
+		}
+		
+		echo json_encode($db_data);
+	}
+	
 	//Aqui cadastro a ordem de coleta
 	if($action == "cadastrarColeta"){
 	
