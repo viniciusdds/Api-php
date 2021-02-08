@@ -2095,6 +2095,7 @@
 					$permissao = $cnpj_cli[1];
 				}
 			}else{
+				
 				$busca = mysqli_query($con,"select 
 												group_concat('''',cnpj_transp,'''') as cnpj_transp, 
 												case when permissao is null then '0' else permissao end permissao
@@ -2115,8 +2116,6 @@
 				$busca = $cnpj;
 			}
 			
-			
-			
 			//Aqui verifico se o usuário tem mais de uma transportadora
 			$tpos = strpos($transp,"'");
 			if($tpos){
@@ -2135,6 +2134,9 @@
 	
 				if($category == "1"){
 					$perfil = " b.cnpj_cli ";
+					
+					
+					
 					$sql = mysqli_query($con,"select 
 													num_pedido,
 													data,
@@ -2188,12 +2190,12 @@
 										cnpj_transp
 									  from sistemas_ag.agendamento_ag where cnpj_cli in (".$busca.") order by length(num_pedido), num_pedido asc")or die("<b style='color: white;'>erro do select de consultar agendamento</b>");
 				$rows = mysqli_num_rows($sql);
-		
 			}
 
-	
-		if($rows > 0){	
-				$id = 0;		  
+		if($rows > 0){
+		
+				$id = 0;
+				$stat = array();				
 				while($result = mysqli_fetch_array($sql)){
 					extract($result);
 					$id = $id + 1;
@@ -2262,9 +2264,10 @@
 					}else{
 						
 						$pos = strpos($num_pedido,"_");
-			
-							if($pos == ""){
+						
+						    if(empty($pos) == 1){
 								
+								$stat[] = true;	
 								$insertDados = mysqli_query($con,"insert into sistemas_ag.lista_agendados 
      														(
 																num_pedido, 
@@ -2287,13 +2290,14 @@
 				
 
 							}else{
+								$stat[] = false;
 								$insertDados = "";
 							}
 					
 					}
 				}
 				
-				if($insertDados != ""){
+				if(in_array(true,$stat)){
 					$selectDados = mysqli_query($con,"SELECT 
 													  	num_pedido,
 														data_agend,
@@ -2303,6 +2307,7 @@
 														horas
 													  FROM sistemas_ag.lista_agendados
 													  where cnpj_cli in (".$busca.")
+													  and num_pedido not regexp '_'
 													  group by num_pedido")or die(mysqli_error($con));
 													  
 					$db_data = array();
