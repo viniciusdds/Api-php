@@ -2575,211 +2575,89 @@
 	//Aqui cadastro a ordem de coleta
 	if($action == "cadastrarColeta"){
 	
-	$origin = array("/",".","-");
-	$destiny = array("","","");
-	
-	//Informações do formulario para cadastro da coleta
-	$cnpj_transp = (trim($_REQUEST['cnpjTransp']) == "") ? trim(str_replace($origin,$destiny,$_REQUEST['cnpjTransp'])) : trim(str_replace($origin,$destiny,$_REQUEST['cnpjTransp']));
-	//$tipo = (strlen(trim($_REQUEST['cnpjTransp'])) != 14) ? "EX" : "NA";
-	$nome_transp = $_REQUEST['nomeTransp'];
-	$end_transp = strtoupper($_REQUEST['endTransp']);
-	$numero_transp = $_REQUEST['numTransp'];
-	$bairro_transp = strtoupper($_REQUEST['bairroTransp']);
-	$cid_transp = strtoupper($_REQUEST['cidadeTransp']);
-	$uf_transp = $_REQUEST['ufTransp'];
-	$cep_transp = $_REQUEST['cepTransp'];
-	$nome_motor = $_REQUEST['motorista'];
-	$tDoc = $_REQUEST['tipo'];
-	if($tDoc == '1'){
-		$cpf_motor = "";
-		$cpf_gringo = str_replace($origin,$destiny,$_REQUEST['doc']);
-	}else{
-		$cpf_motor = str_replace($origin,$destiny,$_REQUEST['doc']);
-		$cpf_gringo = "";
-	}
-	$cnh_motor = $_REQUEST['cnh'];
-	$valid = $_REQUEST['validade'];
-	$placa = $_REQUEST['placa'];
-	$pcarreta = $_REQUEST['placaCarreta'];
-	$pbitrem = $_REQUEST['placaBitrem'];
-	$container = $_REQUEST['placaContainer'];
-	$obs = $_REQUEST['obs'];
-	$email_transp = $_REQUEST['emails'];
-	$tel_transp = $_REQUEST['tel'];
-	$num_pedido = $_REQUEST['num_pedido'];
-	$data_agenda = $_REQUEST['dataAgenda'];
-	$cnpj_cli = $_REQUEST['cnpjCli'];
-	$nome_cli = $_REQUEST['nomeCli'];
-	$categoria = $_REQUEST['perfil'];
-	$tipo = $_REQUEST['origem'];
+		$origin = array("/",".","-");
+		$destiny = array("","","");
+		
+		//Informações do formulario para cadastro da coleta
+		$cnpj_transp = (trim($_REQUEST['cnpjTransp']) == "") ? trim(str_replace($origin,$destiny,$_REQUEST['cnpjTransp'])) : trim(str_replace($origin,$destiny,$_REQUEST['cnpjTransp']));
+		//$tipo = (strlen(trim($_REQUEST['cnpjTransp'])) != 14) ? "EX" : "NA";
+		$nome_transp = $_REQUEST['nomeTransp'];
+		$end_transp = strtoupper($_REQUEST['endTransp']);
+		$numero_transp = $_REQUEST['numTransp'];
+		$bairro_transp = strtoupper($_REQUEST['bairroTransp']);
+		$cid_transp = strtoupper($_REQUEST['cidadeTransp']);
+		$uf_transp = $_REQUEST['ufTransp'];
+		$cep_transp = $_REQUEST['cepTransp'];
+		$nome_motor = $_REQUEST['motorista'];
+		$tDoc = $_REQUEST['tipo'];
+		if($tDoc == '1'){
+			$cpf_motor = "";
+			$cpf_gringo = str_replace($origin,$destiny,$_REQUEST['doc']);
+		}else{
+			$cpf_motor = str_replace($origin,$destiny,$_REQUEST['doc']);
+			$cpf_gringo = "";
+		}
+		$cnh_motor = $_REQUEST['cnh'];
+		$valid = $_REQUEST['validade'];
+		$placa = $_REQUEST['placa'];
+		$pcarreta = $_REQUEST['placaCarreta'];
+		$pbitrem = $_REQUEST['placaBitrem'];
+		$container = $_REQUEST['placaContainer'];
+		$obs = $_REQUEST['obs'];
+		$email_transp = $_REQUEST['emails'];
+		$tel_transp = $_REQUEST['tel'];
+		$num_pedido = $_REQUEST['num_pedido'];
+		$data_agenda = $_REQUEST['dataAgenda'];
+		$cnpj_cli = $_REQUEST['cnpjCli'];
+		$nome_cli = $_REQUEST['nomeCli'];
+		$categoria = $_REQUEST['perfil'];
+		$tipo = $_REQUEST['origem'];
 
-	//echo $num_pedido."<br>".$cnpj_transp."<br>";
+		//echo $num_pedido."<br>".$cnpj_transp."<br>";
 
-	//Verifico se o CNPJ da transportadora existe no agendamento
-	if($categoria === "1"){
-		$verAgenda = mysqli_query($con,"select count(*) from sistemas_ag.agendamento_ag where num_pedido = '".$num_pedido."' and cnpj_transp = '".$cnpj_transp."'")or die("erro no select verAgenda 1"); 
-		$register = mysqli_fetch_row($verAgenda);
-		if($register[0] == 0){
-			$altAgenda = mysqli_query($con,"UPDATE `sistemas_ag`.`agendamento_ag` SET `cnpj_transp`='".$cnpj_transp."', transportadora='".$nome_transp."' WHERE `num_pedido`='".$num_pedido."'")or die("erro no update no altAgenda 1");
-			//$altAgendaHist = mysqli_query($con,"UPDATE `sistemas_ag`.`agendamento_ag_hist` SET `cnpj`='".$cnpj_transp."', nome='".$nome_transp."' WHERE `num_pedido`='".$num_pedido."'")or die("erro no update no altAgendaHist");
+		//Verifico se o CNPJ da transportadora existe no agendamento
+		if($categoria === "1"){
+			$verAgenda = mysqli_query($con,"select count(*) from sistemas_ag.agendamento_ag where num_pedido = '".$num_pedido."' and cnpj_transp = '".$cnpj_transp."'")or die("erro no select verAgenda 1"); 
+			$register = mysqli_fetch_row($verAgenda);
+			if($register[0] == 0){
+				$altAgenda = mysqli_query($con,"UPDATE `sistemas_ag`.`agendamento_ag` SET `cnpj_transp`='".$cnpj_transp."', transportadora='".$nome_transp."' WHERE `num_pedido`='".$num_pedido."'")or die("erro no update no altAgenda 1");
+				//$altAgendaHist = mysqli_query($con,"UPDATE `sistemas_ag`.`agendamento_ag_hist` SET `cnpj`='".$cnpj_transp."', nome='".$nome_transp."' WHERE `num_pedido`='".$num_pedido."'")or die("erro no update no altAgendaHist");
+				/*
+				if($altAgenda){
+					echo "OK";
+				}else{
+					echo "FAIL";
+				}
+				*/
+			}
+			
+			//Vincula o cnpj da transportadora ao cliente
+			$selectTR = mysqli_query($con,"select * from sistemas_ag.cad_transp_ag where cnpj_cli = '".$cnpj_cli."' and cnpj_transp = '".$cnpj_transp."'")or die("error no select de validação");
+			$rowsTR = mysqli_num_rows($selectTR);
+			if($rowsTR == 0){
+				$insertTR = mysqli_query($con,"insert into sistemas_ag.cad_transp_ag 
+												(cnpj_cli,cnpj_transp,razao_social,nome_cli,tipo) 
+													values 
+												('".trim($cnpj_cli)."','".trim($cnpj_transp)."','".$nome_transp."','".$nome_cli."','".$tipo."')")or die("error na inserção do vinculo");
+			}
+			
+		}else{
 			/*
-			if($altAgenda){
-				echo "OK";
-			}else{
-				echo "FAIL";
+			$verAgenda = mysqli_query($con,"select count(*) from sistemas_ag.agendamento_ag where num_pedido = '".$num_pedido."' and cnpj_transp = ''")or die("erro no select verAgenda 2"); 
+			$register = mysqli_fetch_row($verAgenda);
+			if($register[0] > 0){
+				$altAgenda = mysqli_query($con,"UPDATE `sistemas_ag`.`agendamento_ag` SET `cnpj_transp`='".$cnpj_transp."', transportadora='".$nome_transp."' WHERE `num_pedido`='".$num_pedido."'")or die("erro no update no altAgenda 2");
 			}
 			*/
 		}
 		
-		//Vincula o cnpj da transportadora ao cliente
-		$selectTR = mysqli_query($con,"select * from sistemas_ag.cad_transp_ag where cnpj_cli = '".$cnpj_cli."' and cnpj_transp = '".$cnpj_transp."'")or die("error no select de validação");
-		$rowsTR = mysqli_num_rows($selectTR);
-		if($rowsTR == 0){
-			$insertTR = mysqli_query($con,"insert into sistemas_ag.cad_transp_ag 
-											(cnpj_cli,cnpj_transp,razao_social,nome_cli,tipo) 
-												values 
-											('".trim($cnpj_cli)."','".trim($cnpj_transp)."','".$nome_transp."','".$nome_cli."','".$tipo."')")or die("error na inserção do vinculo");
-		}
+		//Verifica se é pedido unificado
+		$pegaId = mysqli_query($con,"select id_veiculo, num_pedido, tipo, cliente from sistemas_ag.veiculos_ag where (num_pedido = '".$num_pedido."' or id_veiculo = '".$num_pedido."')")or die("erro no select pegaId");
+		$returnId = mysqli_fetch_array($pegaId);
 		
-	}else{
-		/*
-		$verAgenda = mysqli_query($con,"select count(*) from sistemas_ag.agendamento_ag where num_pedido = '".$num_pedido."' and cnpj_transp = ''")or die("erro no select verAgenda 2"); 
-		$register = mysqli_fetch_row($verAgenda);
-		if($register[0] > 0){
-			$altAgenda = mysqli_query($con,"UPDATE `sistemas_ag`.`agendamento_ag` SET `cnpj_transp`='".$cnpj_transp."', transportadora='".$nome_transp."' WHERE `num_pedido`='".$num_pedido."'")or die("erro no update no altAgenda 2");
-		}
-		*/
-	}
-	
-	//Verifica se é pedido unificado
-	$pegaId = mysqli_query($con,"select id_veiculo, num_pedido, tipo, cliente from sistemas_ag.veiculos_ag where (num_pedido = '".$num_pedido."' or id_veiculo = '".$num_pedido."')")or die("erro no select pegaId");
-	$returnId = mysqli_fetch_array($pegaId);
-	
-	if($returnId['tipo'] == 'PED'){
-		//insere os logs tudo que cadastrado na coleta
-		$insert1 = mysqli_query($con,"insert into sistemas_ag.coleta_ag_hist 
-				(num_pedido,
-				cnpj_transp,
-				nome_transp,
-				end_transp,
-				numero_transp,
-				bairro_transp,
-				cid_transp,
-				uf_transp,
-				cep_transp,
-				nome_motor,
-				cpf_motor,
-				documento_motor,
-				cnh_motor,
-				data_validade,
-				placa,
-				pl_carreta,
-				pl_bitrem,
-				pl_container,
-				obs,
-				tel_transp,
-				email_transp,
-				data_agenda,
-				cnpj_cli,
-				nome_cli,
-				status,
-				tipo) 
-				select 	
-				'".$num_pedido."',
-				'".$cnpj_transp."',
-				'".$nome_transp."',
-				'".$end_transp."',
-				'".$numero_transp."',
-				'".$bairro_transp."',
-				'".$cid_transp."',
-				'".$uf_transp."',
-				'".$cep_transp."',
-				'".$nome_motor."',
-				'".$cpf_motor."',
-				'".$cpf_gringo."',
-				'".$cnh_motor."',
-				'".$valid."',
-				'".$placa."',
-				'".$pcarreta."',
-				'".$pbitrem."',
-				'".$container."',
-				'".$obs."',
-				'".$tel_transp."',
-				'".$email_transp."',
-				'".$data_agenda."',
-				trim(cliente),
-				nome_cli,
-				'A',
-				'".$tipo."' from sistemas_ag.veiculos_ag a inner join sistemas_ag.clientes_ag_hist b
-					on a.num_pedido = b.num_pedido where id_veiculo = '$num_pedido' 
-					group by cliente,id_veiculo")or die("erro no insert ordem coleta hist 1");
-	}else{
-		//insere os logs tudo que cadastrado na coleta
-		$insert1 = mysqli_query($con,"insert into sistemas_ag.coleta_ag_hist 
-				(num_pedido,
-				cnpj_transp,
-				nome_transp,
-				end_transp,
-				numero_transp,
-				bairro_transp,
-				cid_transp,
-				uf_transp,
-				cep_transp,
-				nome_motor,
-				cpf_motor,
-				documento_motor,
-				cnh_motor,
-				data_validade,
-				placa,
-				pl_carreta,
-				pl_bitrem,
-				pl_container,
-				obs,
-				tel_transp,
-				email_transp,
-				data_agenda,
-				cnpj_cli,
-				nome_cli,
-				status,
-				tipo) 
-					values 
-				('".$num_pedido."',
-				'".$cnpj_transp."',
-				'".$nome_transp."',
-				'".$end_transp."',
-				'".$numero_transp."',
-				'".$bairro_transp."',
-				'".$cid_transp."',
-				'".$uf_transp."',
-				'".$cep_transp."',
-				'".$nome_motor."',
-				'".$cpf_motor."',
-				'".$cpf_gringo."',
-				'".$cnh_motor."',
-				'".$valid."',
-				'".$placa."',
-				'".$pcarreta."',
-				'".$pbitrem."',
-				'".$container."',
-				'".$obs."',
-				'".$tel_transp."',
-				'".$email_transp."',
-				'".$data_agenda."',
-				'".$cnpj_cli."',
-				'".$nome_cli."',
-				'A',
-				'".$tipo."')")or die("erro no insert ordem coleta hist 2");
-	}
-	
-	
-	//verifica se o pedido já existe na tabela
-	$verify = mysqli_query($con,"select * from sistemas_ag.coleta_ag where num_pedido = '".$num_pedido."'")or die("erro no select verifica pedido");
-	$rows = mysqli_num_rows($verify);
-	
-	if($rows == 0){
-		  if($returnId['tipo'] == 'PED'){
-			  //Inserção no banco de dados
-			  $insert2 = mysqli_query($con,"insert into sistemas_ag.coleta_ag 
+		if($returnId['tipo'] == 'PED'){
+			//insere os logs tudo que cadastrado na coleta
+			$insert1 = mysqli_query($con,"insert into sistemas_ag.coleta_ag_hist 
 					(num_pedido,
 					cnpj_transp,
 					nome_transp,
@@ -2807,7 +2685,188 @@
 					status,
 					tipo) 
 					select 	
-					'$num_pedido',
+					'".$num_pedido."',
+					'".$cnpj_transp."',
+					'".$nome_transp."',
+					'".$end_transp."',
+					'".$numero_transp."',
+					'".$bairro_transp."',
+					'".$cid_transp."',
+					'".$uf_transp."',
+					'".$cep_transp."',
+					'".$nome_motor."',
+					'".$cpf_motor."',
+					'".$cpf_gringo."',
+					'".$cnh_motor."',
+					'".$valid."',
+					'".$placa."',
+					'".$pcarreta."',
+					'".$pbitrem."',
+					'".$container."',
+					'".$obs."',
+					'".$tel_transp."',
+					'".$email_transp."',
+					'".$data_agenda."',
+					trim(cliente),
+					nome_cli,
+					'A',
+					'".$tipo."' from sistemas_ag.veiculos_ag a inner join sistemas_ag.clientes_ag_hist b
+						on a.num_pedido = b.num_pedido where id_veiculo = '$num_pedido' 
+						group by cliente,id_veiculo")or die("erro no insert ordem coleta hist 1");
+		}else{
+			//insere os logs tudo que cadastrado na coleta
+			$insert1 = mysqli_query($con,"insert into sistemas_ag.coleta_ag_hist 
+					(num_pedido,
+					cnpj_transp,
+					nome_transp,
+					end_transp,
+					numero_transp,
+					bairro_transp,
+					cid_transp,
+					uf_transp,
+					cep_transp,
+					nome_motor,
+					cpf_motor,
+					documento_motor,
+					cnh_motor,
+					data_validade,
+					placa,
+					pl_carreta,
+					pl_bitrem,
+					pl_container,
+					obs,
+					tel_transp,
+					email_transp,
+					data_agenda,
+					cnpj_cli,
+					nome_cli,
+					status,
+					tipo) 
+						values 
+					('".$num_pedido."',
+					'".$cnpj_transp."',
+					'".$nome_transp."',
+					'".$end_transp."',
+					'".$numero_transp."',
+					'".$bairro_transp."',
+					'".$cid_transp."',
+					'".$uf_transp."',
+					'".$cep_transp."',
+					'".$nome_motor."',
+					'".$cpf_motor."',
+					'".$cpf_gringo."',
+					'".$cnh_motor."',
+					'".$valid."',
+					'".$placa."',
+					'".$pcarreta."',
+					'".$pbitrem."',
+					'".$container."',
+					'".$obs."',
+					'".$tel_transp."',
+					'".$email_transp."',
+					'".$data_agenda."',
+					'".$cnpj_cli."',
+					'".$nome_cli."',
+					'A',
+					'".$tipo."')")or die("erro no insert ordem coleta hist 2");
+		}
+		
+		
+		//verifica se o pedido já existe na tabela
+		$verify = mysqli_query($con,"select * from sistemas_ag.coleta_ag where num_pedido = '".$num_pedido."'")or die("erro no select verifica pedido");
+		$rows = mysqli_num_rows($verify);
+		
+		if($rows == 0){
+			  if($returnId['tipo'] == 'PED'){
+				  //Inserção no banco de dados
+				  $insert2 = mysqli_query($con,"insert into sistemas_ag.coleta_ag 
+						(num_pedido,
+						cnpj_transp,
+						nome_transp,
+						end_transp,
+						numero_transp,
+						bairro_transp,
+						cid_transp,
+						uf_transp,
+						cep_transp,
+						nome_motor,
+						cpf_motor,
+						documento_motor,
+						cnh_motor,
+						data_validade,
+						placa,
+						pl_carreta,
+						pl_bitrem,
+						pl_container,
+						obs,
+						tel_transp,
+						email_transp,
+						data_agenda,
+						cnpj_cli,
+						nome_cli,
+						status,
+						tipo) 
+						select 	
+						'$num_pedido',
+						'$cnpj_transp',
+						'$nome_transp',
+						'$end_transp',
+						'$numero_transp',
+						'$bairro_transp',
+						'$cid_transp',
+						'$uf_transp',
+						'$cep_transp',
+						'$nome_motor',
+						'$cpf_motor',
+						'$cpf_gringo',
+						'$cnh_motor',
+						'$valid',
+						'$placa',
+						'$pcarreta',
+						'$pbitrem',
+						'$container',
+						'$obs',
+						'$tel_transp',
+						'$email_transp',
+						'$data_agenda',
+						trim(cliente),
+						nome_cli,
+						'A',
+						'$tipo'
+					from sistemas_ag.veiculos_ag a inner join sistemas_ag.clientes_ag_hist b
+						on a.num_pedido = b.num_pedido where id_veiculo = '$num_pedido' 
+						group by cliente,id_veiculo")or die("erro no insert ordem coleta 2");
+			  }else{
+				  //Inserção no banco de dados
+				  $insert2 = mysqli_query($con,"insert into sistemas_ag.coleta_ag 
+					(num_pedido,
+					cnpj_transp,
+					nome_transp,
+					end_transp,
+					numero_transp,
+					bairro_transp,
+					cid_transp,
+					uf_transp,
+					cep_transp,
+					nome_motor,
+					cpf_motor,
+					documento_motor,
+					cnh_motor,
+					data_validade,
+					placa,
+					pl_carreta,
+					pl_bitrem,
+					pl_container,
+					obs,
+					tel_transp,
+					email_transp,
+					data_agenda,
+					cnpj_cli,
+					nome_cli,
+					status,
+					tipo) 
+						values 
+					('$num_pedido',
 					'$cnpj_transp',
 					'$nome_transp',
 					'$end_transp',
@@ -2829,113 +2888,297 @@
 					'$tel_transp',
 					'$email_transp',
 					'$data_agenda',
-					trim(cliente),
-					nome_cli,
+					'$cnpj_cli',
+					'$nome_cli',
 					'A',
-					'$tipo'
-				from sistemas_ag.veiculos_ag a inner join sistemas_ag.clientes_ag_hist b
-					on a.num_pedido = b.num_pedido where id_veiculo = '$num_pedido' 
-					group by cliente,id_veiculo")or die("erro no insert ordem coleta 2");
-		  }else{
-			  //Inserção no banco de dados
-			  $insert2 = mysqli_query($con,"insert into sistemas_ag.coleta_ag 
-				(num_pedido,
-				cnpj_transp,
-				nome_transp,
-				end_transp,
-				numero_transp,
-				bairro_transp,
-				cid_transp,
-				uf_transp,
-				cep_transp,
-				nome_motor,
-				cpf_motor,
-				documento_motor,
-				cnh_motor,
-				data_validade,
-				placa,
-				pl_carreta,
-				pl_bitrem,
-				pl_container,
-				obs,
-				tel_transp,
-				email_transp,
-				data_agenda,
-				cnpj_cli,
-				nome_cli,
-				status,
-				tipo) 
-					values 
-				('$num_pedido',
-				'$cnpj_transp',
-				'$nome_transp',
-				'$end_transp',
-				'$numero_transp',
-				'$bairro_transp',
-				'$cid_transp',
-				'$uf_transp',
-				'$cep_transp',
-				'$nome_motor',
-				'$cpf_motor',
-				'$cpf_gringo',
-				'$cnh_motor',
-				'$valid',
-				'$placa',
-				'$pcarreta',
-				'$pbitrem',
-				'$container',
-				'$obs',
-				'$tel_transp',
-				'$email_transp',
-				'$data_agenda',
-				'$cnpj_cli',
-				'$nome_cli',
-				'A',
-				'$tipo')")or die("erro no insert ordem coleta 3"); 
-		  }
-		  
-		  //altera status do agendamento
-		  $altera_status = mysqli_query($con,"UPDATE `sistemas_ag`.`agendamento_ag` SET `status`='1' WHERE `num_pedido`='".$num_pedido."'")or die("error no update status agendamento");  
-		  
-		  
-		  $sqls = mysqli_query($con,"select logotipo from sistemas_ag.transportadora_ag where CNPJ = '".$cnpj_transp."'")or die ("error no select do upload logotipo");
-		   $rows2 = mysqli_num_rows($sqls);
-		
-				if($rows2 == 0){
-					$adiciona = mysqli_query($con,"INSERT INTO sistemas_ag.transportadora_ag (CNPJ,NOME,CEP,RUA,NUMERO,BAIRRO,CIDADE,UF,TELEFONE,EMAIL, logotipo) 
-					VALUES 
-					('$cnpj_transp','$nome_transp','$cep_transp','$end_transp', '$numero_transp','$bairro_transp','$cid_transp','$uf_transp','$tel_transp','$email_transp','') ");
-				}
-		  
-		  //Aqui dá o retorno para a tela de cadastro
-		  if($insert2 && $altera_status){
-			echo "1"; 
-		  }else{
-			echo "0"; 
-		  }
-	}else{
-		//altera o status N para A
-		$update = mysqli_query($con,"UPDATE `sistemas_ag`.`coleta_ag` SET `status`='A', cnpj_transp = '$cnpj_transp', nome_transp = '$nome_transp', end_transp = '$end_transp', numero_transp = '$numero_transp', bairro_transp = '$bairro_transp', cid_transp = '$cid_transp', uf_transp = '$uf_transp', cep_transp = '$cep_transp', nome_motor='$nome_motor', cpf_motor='$cpf_motor',documento_motor = '$cpf_gringo', cnh_motor='$cnh_motor', data_validade='$valid', placa='$placa', pl_carreta='$pcarreta', pl_bitrem='$pbitrem', pl_container='$container', obs='$obs', email_transp='$email_transp', tel_transp='$tel_transp', tipo='$tipo' WHERE `num_pedido`='".$num_pedido."'")or die("erro no update do status coleta ag");
-		
-		//altera status do agendamento
-		$altera_status = mysqli_query($con,"UPDATE `sistemas_ag`.`agendamento_ag` SET `status`='1'  WHERE `num_pedido`='".$num_pedido."'")or die("error no update status agendamento");  
-		
-		$sqls = mysqli_query($con,"select logotipo from sistemas_ag.transportadora_ag where CNPJ = '".$cnpj_transp."'")or die ("error no select do upload logotipo");
-		   $rows2 = mysqli_num_rows($sqls);
-		
-				if($rows2 == 0){
-					$adiciona = mysqli_query($con,"INSERT INTO sistemas_ag.transportadora_ag (CNPJ,NOME,CEP,RUA,NUMERO,BAIRRO,CIDADE,UF,TELEFONE,EMAIL, logotipo) 
-					VALUES 
-					('$cnpj_transp','$nome_transp','$cep_transp','$end_transp', '$numero_transp','$bairro_transp','$cid_transp','$uf_transp','$tel_transp','$email_transp','') ");
-				}
-		 
-		 //Aqui dá o retorno para a tela de cadastro
-		 if($update && $altera_status){
-			echo "1"; 
-		 }else{
-			echo "0"; 
-		 }
+					'$tipo')")or die("erro no insert ordem coleta 3"); 
+			  }
+			  
+			  //altera status do agendamento
+			  $altera_status = mysqli_query($con,"UPDATE `sistemas_ag`.`agendamento_ag` SET `status`='1' WHERE `num_pedido`='".$num_pedido."'")or die("error no update status agendamento");  
+			  
+			  
+			  $sqls = mysqli_query($con,"select logotipo from sistemas_ag.transportadora_ag where CNPJ = '".$cnpj_transp."'")or die ("error no select do upload logotipo");
+			   $rows2 = mysqli_num_rows($sqls);
+			
+					if($rows2 == 0){
+						$adiciona = mysqli_query($con,"INSERT INTO sistemas_ag.transportadora_ag (CNPJ,NOME,CEP,RUA,NUMERO,BAIRRO,CIDADE,UF,TELEFONE,EMAIL, logotipo) 
+						VALUES 
+						('$cnpj_transp','$nome_transp','$cep_transp','$end_transp', '$numero_transp','$bairro_transp','$cid_transp','$uf_transp','$tel_transp','$email_transp','') ");
+					}
+			  
+			  //Aqui dá o retorno para a tela de cadastro
+			  if($insert2 && $altera_status){
+				echo "1"; 
+			  }else{
+				echo "0"; 
+			  }
+		}else{
+			//altera o status N para A
+			$update = mysqli_query($con,"UPDATE `sistemas_ag`.`coleta_ag` SET `status`='A', cnpj_transp = '$cnpj_transp', nome_transp = '$nome_transp', end_transp = '$end_transp', numero_transp = '$numero_transp', bairro_transp = '$bairro_transp', cid_transp = '$cid_transp', uf_transp = '$uf_transp', cep_transp = '$cep_transp', nome_motor='$nome_motor', cpf_motor='$cpf_motor',documento_motor = '$cpf_gringo', cnh_motor='$cnh_motor', data_validade='$valid', placa='$placa', pl_carreta='$pcarreta', pl_bitrem='$pbitrem', pl_container='$container', obs='$obs', email_transp='$email_transp', tel_transp='$tel_transp', tipo='$tipo' WHERE `num_pedido`='".$num_pedido."'")or die("erro no update do status coleta ag");
+			
+			//altera status do agendamento
+			$altera_status = mysqli_query($con,"UPDATE `sistemas_ag`.`agendamento_ag` SET `status`='1'  WHERE `num_pedido`='".$num_pedido."'")or die("error no update status agendamento");  
+			
+			$sqls = mysqli_query($con,"select logotipo from sistemas_ag.transportadora_ag where CNPJ = '".$cnpj_transp."'")or die ("error no select do upload logotipo");
+			   $rows2 = mysqli_num_rows($sqls);
+			
+					if($rows2 == 0){
+						$adiciona = mysqli_query($con,"INSERT INTO sistemas_ag.transportadora_ag (CNPJ,NOME,CEP,RUA,NUMERO,BAIRRO,CIDADE,UF,TELEFONE,EMAIL, logotipo) 
+						VALUES 
+						('$cnpj_transp','$nome_transp','$cep_transp','$end_transp', '$numero_transp','$bairro_transp','$cid_transp','$uf_transp','$tel_transp','$email_transp','') ");
+					}
+			 
+			 //Aqui dá o retorno para a tela de cadastro
+			 if($update && $altera_status){
+				echo "1"; 
+			 }else{
+				echo "0"; 
+			 }
+		}
 	}
-}
+	
+	//Consulta as ordens de coletas geradas
+	if($action == "verColeta"){
+			$cnpj = $_REQUEST['cnpj'];
+			$codigoId = $_REQUEST['cnpj'];
+			$cliente = $_REQUEST['cliente'];
+			$categoria = $_REQUEST['perfil'];
+				
+		if($categoria === "1"){
+			$cliente = $cnpj;
+			$busca = mysqli_query($con,"select group_concat('''',cnpj_transp,'''') as cnpj_transp, cnpj_cli from sistemas_ag.cad_transp_ag where cnpj_cli = '".$cnpj."'")or die("erro no select busca cliente");
+			$rows = mysqli_num_rows($busca);
+			if($rows > 0){
+				$cnpj_cli = mysqli_fetch_array($busca);
+				$cnpj = $cnpj_cli[0];
+			}
+		}else{
+			$cliente = "";
+			$busca = mysqli_query($con,"select group_concat('''',cnpj_cli,'''') as cnpj_cli from sistemas_ag.cad_transp_ag where cnpj_transp = '".$cnpj."'")or die("erro no select busca cliente");
+			$rows = mysqli_num_rows($busca);
+			if($rows > 0){
+				$cnpj_cli = mysqli_fetch_array($busca);
+				$cliente = $cnpj_cli[0];
+			}
+		}
+		
+		//Aqui eu procuro uma ' na variavel
+		$pos = strpos($cnpj,"'");
+		$match = strpos($cliente,"'");
+		
+		/*
+			Aqui verifico se a ' existe
+			SE SIM: pega a variavel sem concatenação
+			SE NÃO: pega com a concatenação
+		*/
+
+		if($pos === false){
+			$pesq = "'".trim($cnpj)."'";
+		}else{
+			$pesq = trim($cnpj);
+		}
+		
+		if($match === false){
+			$search = "like '%".trim($cliente)."%'";
+		}else{
+			$search = "in (".trim($cliente).")";
+		}
+		
+		//Aqui retorno o tipo de ocorrência
+		$type = $_REQUEST['type'];
+		
+		/*
+			Aqui verifico o tipo de ocorrência
+			V: ordens para ser validadas
+			C e I: ordens para corregir
+			Y: ordens validadas pela balança
+		*/
+		if($type === "V"){
+			$stat = "A";
+			//NÃO FORAM ENCONTRADAS ORDENS DE COLETA PENDENTES DE VALIDAÇÃO!
+			$aviso = "0";
+		}elseif($type === "C" || $type === "I"){
+			$stat = "N";
+			//NÃO FORAM ENCONTRADAS ORDENS DE COLETA QUE NECESSITEM DE CORREÇÃO!
+			$aviso = "0";
+		}else{
+			$stat = "Y";
+			//NÃO FORAM ENCONTRADAS ORDENS DE COLETA VALIDADAS!
+			$aviso = "0";
+		}
+			
+		$sql = mysqli_query($con,"SELECT 
+								a.num_pedido as num_pedido,
+								(select group_concat(' ',nome_cli,' ') from sistemas_ag.coleta_ag where num_pedido = a.num_pedido group by num_pedido limit 1) nome_cli,
+								a.nome_transp,
+								a.data_agenda,
+								a.nome_motor,
+								a.placa,
+                                a.pl_bitrem,
+                                a.pl_carreta,
+                                a.pl_container,
+                                case when a.cpf_motor is null or a.cpf_motor = '' then a.documento_motor else a.cpf_motor end doc,
+								a.cpf_motor,
+								a.documento_motor,
+								a.data_validade,
+                                a.cnpj_cli,
+								a.cnpj_transp,
+                                a.cnh_motor,
+                                c.tel_cli,
+								d.qtd_veiculos,
+                                protocolo
+							FROM
+								sistemas_ag.coleta_ag a
+                                inner join
+                                sistemas_ag.agendamento_hist b
+                                on a.num_pedido = b.num_pedido
+                                left join
+                                sistemas_ag.clientes_ag c
+                                on a.num_pedido = c.num_pedido
+								left join
+                                sistemas_ag.agendamento_ag d
+                                on a.num_pedido = d.num_pedido
+							where d.data <> '' and a.status = '".$stat."' and a.cnpj_transp in (".$pesq.") and a.cnpj_cli ".$search."
+							group by case when a.num_pedido like '%KIT%' then mid(a.num_pedido,1,POSITION('-KIT' in a.num_pedido)-1) else a.num_pedido end
+							ORDER BY LENGTH(a.num_pedido) , a.num_pedido ASC")or die("Erro do select de consultar coleta ".mysqli_error($con));
+							
+		$rows = mysqli_num_rows($sql);
+
+		if($rows > 0){
+			$truncate = mysqli_query($con,"truncate sistemas_ag.lista_coleta")or die(mysqli_error($con));
+			$id = 0;
+			while($result = mysqli_fetch_array($sql)){
+				$id = $id+1;
+				extract($result);	
+			
+				$position = strpos($num_pedido,"-KIT");
+				if($position){
+				   $num_pedido = substr($num_pedido,0,$position);
+				}else{
+				   $num_pedido = $num_pedido;	
+				}
+				
+				$pesq = $conAG->query("select 
+												iop.document NOTA_FISCAL,
+												io.id_in_out CESV,
+												TO_CHAR(time_out, 'DD/MM/YYYY HH24:MI') DATA, 
+												TO_CHAR(time_release_in, 'DD/MM/YYYY HH24:MI') CHEGADA,
+												  case 
+													when af.stat = '35' and pf.stat = '41' and max(pf.stat) = '41' then 'EM SEPARACAO'
+													when af.stat = '54' and pf.stat = '41' and max(pf.stat) = '41' then 'EM SEPARACAO' 
+													when af.stat = '54' and pf.stat = '90' and max(pf.stat) = '90' then 'EM SEPARACAO'
+													when af.stat = '35' and pf.stat = '50' and max(pf.stat) = '50' then 'EM SEPARACAO'
+													when af.stat = '55' and max(pf.stat) = '90' then 'OP SEPARADO' 
+													when af.stat = '74' and pf.stat = '90' and max(pf.stat) = '90' then 'EM CONFERENCIA' 
+													when af.stat = '74' and pf.stat = '90' and max(pf.stat) = '97' then 'EM SEPARAÇÃO' 
+													when max(pf.stat) = '97' and pf.stat = '97' and af.stat = '84' then 'PP CONFERIDO'
+													when af.stat = '75' and pf.stat = '97' and max(pf.stat) = '97' then 'PP CONFERIDO'
+													when max(pf.stat) = '97' and pf.stat = '97' and af.stat = '95' and trunc(sysdate) <=  af.time_aen then 'MATERIAL CARREGADO'
+													when max(pf.stat) = '97' and pf.stat = '97' and af.stat = '95' and trunc(sysdate) > af.time_aen then 'FINALIZADO'
+													else 'AGUARDANDO SEPARACAO' end STATUS    
+												from in_out io inner join in_out_pos iop 
+												     on io.id_in_out = iop.id_in_out
+													 left join pickauf pf
+													 on replace(replace(replace(pf.nr_auf, chr(10), ''), chr(13), ''), chr(9), '') = replace(replace(replace(iop.document, chr(10), ''), chr(13), ''), chr(9), '')
+												     left join auftraege af
+												     on replace(replace(replace(pf.nr_auf, chr(10), ''), chr(13), ''), chr(9), '') = replace(replace(replace(af.nr_auf, chr(10), ''), chr(13), ''), chr(9), '')
+												  where  io.stat <> 80 
+														/*and time_out is not null*/
+														and iop.document is not null
+														and iop.document in ('".$num_pedido."')
+														group by iop.document,io.id_in_out,time_out,time_release_in,af.stat,pf.stat,af.time_aen");
+				
+
+				$pesq->execute();
+				$lines = $pesq->fetch();
+				$pesq->execute();
+				$row = $pesq->fetch();
+				
+				$defeito = mysqli_query($con,"select problema, descricao from sistemas_ag.ordem_coleta where num_pedido in ('".$num_pedido."')")or die("erro no select de defeito");
+				$def = mysqli_fetch_array($defeito);
+				
+				if($row['STATUS'] == "FINALIZADO"){
+					$insert = "";
+				}else{
+					
+					$insert = mysqli_query($con,"insert into sistemas_ag.lista_coleta 
+													(
+														num_pedido, 
+														cnpj,
+														qtd_veiculos, 
+														cliente, 
+														transportadora, 
+														data_agenda, 
+														motorista, 
+														placa, 
+														problema, 
+														descricao,
+														status,
+														carreta,
+														bitrem,
+														container,
+														cnh,
+														cpf_motor,
+														cnpj_transp,
+														documento
+													)
+    												values
+    												(
+														'".$num_pedido."', 
+														'".$codigoId."', 
+														'".$qtd_veiculos."', 
+														'".$nome_cli."', 
+														'".$nome_transp."', 
+														'".$data_agenda."', 
+														'".$nome_motor."', 
+														'".$placa."', 
+														'".$def['problema']."', 
+														'".$def['descricao']."',
+														'".$stat."',
+														'".$pl_carreta."',
+														'".$pl_bitrem."',
+														'".$pl_container."',
+														'".$cnh_motor."',
+														'".$cpf_motor."',
+														'".$cnpj_transp."',
+														'".$documento_motor."'
+													)
+												")or die(mysqli_error($con));
+				}			
+			}
+
+			if($insert != ""){
+				$db_data = array();
+				$listaColeta = mysqli_query($con,"select 
+													num_pedido,
+													qtd_veiculos,
+													cliente,
+													transportadora,
+													data_agenda,
+													motorista,
+													placa,
+													problema,
+													descricao,
+													carreta,
+													bitrem,
+													container,
+													cnh,
+													cpf_motor,
+													cnpj_transp,
+													documento
+												  from sistemas_ag.lista_coleta
+												  	where cnpj = '".$codigoId."'
+													and status = '".$stat."'
+													group by num_pedido
+											");
+				while($result = mysqli_fetch_array($listaColeta)){
+					$db_data[] = $result;
+				}
+				
+				echo json_encode($db_data);
+			}	
+		}
+	}
 	
 ?>
