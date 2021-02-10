@@ -299,15 +299,12 @@
 								  order by time_stamp desc");
 			
 		$rows = mysqli_num_rows($sql);			
-
-		if($rows > 0){			
+		
 			while($result = mysqli_fetch_array($sql)){
 				$db_data[] = $result;
 			}
 			echo json_encode($db_data);
-		}else{
-			echo "0";
-		}
+		
 	}
 	
 	//Flag de permissão de agendamento para transportadoras
