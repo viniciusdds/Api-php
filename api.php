@@ -425,6 +425,18 @@
 		}	
 	}
 	
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////// GERAÇÃO DE PEDIDO  ////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	
+	
 	//Consulta os pedidos da LS200
 	if($action == "pesquisaPedido"){
 		$busca = $_REQUEST['busca'];
@@ -499,8 +511,6 @@
 						$qtotal->execute();
 						$total = $qtotal->fetch();	
 						
-						
-						
 						$verificaUZ = mysqli_query($con,"select palete, pedido from sistemas_ag.clientes_ag where palete = '".trim($row['UZ'])."'")or die("erro no select verifica UZ");
 						$linhasUZ = mysqli_num_rows($verificaUZ);
 						$pedidoUZ = mysqli_fetch_array($verificaUZ);
@@ -514,7 +524,7 @@
 						$groupBy = "group by a.palete";
 							
 						//Verifica se tem algum registro no banco
-							$teste = mysqli_query($con,"select 
+						$teste = mysqli_query($con,"select 
 															sum(pedido) as pedidos,
 															qtd_disp disp,
 															pedido,
@@ -555,7 +565,6 @@
 															and a.produto = '".trim($row['PRODUTO'])."' and a.lote = '".trim($row['LOTE'])."' ".$clausula."
 															")or die("erro no select coleta cliente mysql q total");
 							
-							
 							$rows = mysqli_num_rows($teste);
 							$acumulados = mysqli_query($con,"select 
 																sum(pedido) total,
@@ -569,7 +578,6 @@
 							$acumulado = mysqli_fetch_array($acumulados);
 							
 							$EstoqueUZ = mysqli_query($con,"select palete from sistemas_ag.clientes_ag where nota_fiscal = '".$row['NOTA_FISCAL']."' and produto = '".$row['PRODUTO']."' and lote = '".$row['LOTE']."' and pedido = qtd_por_uz")or die("erro no select EstoqueUZ");
-							
 																
 							$rows = mysqli_num_rows($teste);
 							if($rows > 0){
@@ -602,8 +610,7 @@
 									$teste = array_count_values($arr);
 									foreach($teste as $v1){
 									}	
-												
-												
+																
 									if($v1 == 1){
 										$estoque = $row['QTD'] - $acumulado['total'];
 									}else{		
@@ -613,10 +620,7 @@
 											$estoque = $row['QTD'];
 										}										
 									}
-									
-									//echo "".trim($row['NOTA_FISCAL'])." - ".trim($row['LOTE_SERIAL'])." - ".trim($row['PRODUTO'])." - ".round($estoque)." - ".trim($row['LOTE'])." - ".utf8_encode(trim($row['MEDIDA']))." - ".$cnpj." - ".trim($row['UZ'])." - ".$cubagem." - ".trim($total['TOTAL'])." <br>";
-
-
+								
 									if($estoque > 0){
 										$insert = mysqli_query($con,"insert into sistemas_ag.lista_pedidos_ag 
 																 (
@@ -730,7 +734,6 @@
 							and k.entow_ent_id = c.entdf_id 
 							and k.entow_ent_id = '".$cnpj."'");
 
-	
 		$stid->execute();			
 		$row = $stid->fetch();
 		$client_id = $row['ID_CLIENTE'];
@@ -743,11 +746,7 @@
 		$cidade_cli = $row['CIDADE'];
 		$auth = $_REQUEST['auth'];
 		$empresa = $_REQUEST['empresa'];;
-			
-				
-		//echo $client_id." - ".$nota_fiscal." - ".$lote_serial." - ".$produto." - ".$qtd_disp." - ".$lote." - ".$unidade." - ".$cnpj." - ".$cubagem." - ".$palete." - ".$email_cli." - ".$end_cli." - ".$numero_cli." - ".$bairro_cli." - ".$tel_cli." - ".$cep_cli." - ".$cidade_cli." - ".$num_pedido;
-			
-			
+					
 			    // tabela principal
 				$cadastrar = mysqli_query($con,"insert into `sistemas_ag`.`clientes_ag` 
 																(
@@ -859,7 +858,6 @@
 				}else{
 					echo mysqli_error($con);
 				}
-		
 	}
 	
 	//Pesquisa itens por quantidade
@@ -917,7 +915,6 @@
 			$composto->execute();
 			$results = $composto->fetch();			
 			
-			
 			$item = $conAG->query("select c.id_artifrag ITEM, c.mng_best_org QTD  from comp_prod c where c.id_artifath = '".trim($results['COMPOSTO'])."'");
 			$item->execute();
 			$qt_kit = $item->fetch();
@@ -943,7 +940,6 @@
 			}else{
 				$estoque = $row['QTD'];
 			}
-			
 			
 			$arr1[] = $row['NOTA_FISCAL'];
 			$not1 = array_count_values($arr1);
@@ -1001,7 +997,6 @@
 							$qtd_composto = 0;
 						}
 						
-						//echo trim($result['COMPOSTO'])."<br>";
 						$docit = $conAG->query("select 
 													   doc.dochd_doc_prc_id,
 													   case when s.sfcab_avl_bal_qt is null then di.docit_qt - $qtd_composto else s.sfcab_avl_bal_qt - $qtd_composto  end QTD, 
@@ -1039,10 +1034,7 @@
 										$cubagem = '0';
 									}
 									
-									//echo trim($row['NOTA_FISCAL'])." - ".trim($row['LOTE_SERIAL'])." - ".trim($result['COMPOSTO'])." - ".trim($row['LOTE'])." - ".utf8_encode(trim($row['MEDIDA']))." - ".$cnpj." - ".str_replace(",",".",intval($cub['CUBAGEM']))." - ".$qtdComposto['QTD'];
-									
-									//Insert de composto
-							
+									//Insert de composto			
 									$insertC = mysqli_query($con,"INSERT INTO `sistemas_ag`.`lista_composto_ag` 
 																(
 																	`nota_fiscal`,
@@ -1082,8 +1074,6 @@
 					}else{
 						$cubagem = '0';
 					}
-					
-					//echo trim($row['NOTA_FISCAL'])." - ".trim($row['LOTE_SERIAL'])." - ".trim($row['PRODUTO'])." - ".trim($row['LOTE'])." - ".utf8_encode(trim($row['MEDIDA']))." - ".$cnpj." - ".$cubagem." - ".round($estoque)."<br>";
 					
 						//Insert de quantidade
 						$insertU = mysqli_query($con,"INSERT INTO `sistemas_ag`.`lista_qtd_ag` 
@@ -1171,8 +1161,7 @@
 							and k.entow_ent_id = t.entdfc_ent_id
 							and k.entow_ent_id = c.entdf_id 
 							and k.entow_ent_id = '".$cnpj."'");
-
-	
+							
 		$stid->execute();			
 		$row = $stid->fetch();
 		$client_id = $row['ID_CLIENTE'];
@@ -1184,7 +1173,6 @@
 		$cep_cli = $row['CEP'];
 		$cidade_cli = $row['CIDADE'];
 		
-			
 			if($forma == "COMP"){
 				$items = $conAG->query("select c.id_artifrag ITEM, c.einh_mng_org MEDIDA, c.mng_best_org QTD  from comp_prod c where c.id_artifath = '".$produto."'");
 				$items->execute();
@@ -1244,9 +1232,7 @@
 				values
 				('$num_pedido','$nota_fiscal','$lote_serial','$produto','$qtd_total','$lote','$unidade','$pedido','$empresa','$cnpj','$end_cli','$numero_cli','$bairro_cli','$cep_cli','$cidade_cli','$client_id','$tel_cli','$email_cli','--','$cubagem','$auth','$pedido','$result_qtdComp','$forma') ON DUPLICATE KEY UPDATE pedido = pedido + '$pedido', qtd_disp = qtd_disp");	
 			}
-			
-					
-			
+				
 			//Verifica se a inserção foi feita com sucesso
 			if($insert){
 				$limpar1 = mysqli_query($con,"delete from sistemas_ag.lista_composto_ag");
@@ -1256,6 +1242,17 @@
 				echo "0";
 			}
 	}
+	
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////// PROCESSO DE AGENDAMENTO //////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
 	//Aqui eu consulto os pedidos gerados
 	if($action == "buscarPedidos"){			
@@ -1284,7 +1281,6 @@
 		while($result = mysqli_fetch_array($sql)){
 			$db_data[] = $result;
 		}
-		
 		echo json_encode($db_data);
 	}
 
@@ -1299,13 +1295,8 @@
 		$pedido = $_REQUEST['pedido'];
 		$cubagem = $_REQUEST['cubagem'];
 		$palete = $_REQUEST['palete'];
-		
-	
-		
 		$pos = strpos($produto,"KIT");
-		
 		if($pos){
-			
 			$pesqQTD = $conAG->query("select 
 										q.trenn_1 LOTE,
 										c.id_artifrag ITEM, 
@@ -1316,34 +1307,25 @@
 									and q.nr_lieferschein = '".$nota_fiscal."' 
 									group by c.id_artifrag, c.mng_best_org, q.trenn_1");
 				
-				
 			$pesqQTD->execute();
 			
-			while($returnQTD = $pesqQTD->fetch()){
-				
-					
+			while($returnQTD = $pesqQTD->fetch()){					
 				$qtdEditada = ((int)$returnQTD['QTD'] * (int)$qtd_nova);
 				$pesqCUB = $conAG->query("select REPLACE(round(a.vol,3), ',' ,'.') CUBAGEM from artvpe a where a.id_artikel = '".$returnQTD['ITEM']."' and a.vol is not null");
 				$pesqCUB->execute();
 				$returnCUB = $pesqCUB->fetch();
-				
-				$valCubagem = ((float)$returnCUB['CUBAGEM'] * (float)$qtdEditada);
-				
-				//$editarQtdPedido = mysqli_query($con,"UPDATE `sistemas_ag`.`qtd_composto` SET qtd_pedida = '".$qtd_pedido."' WHERE num_pedido = '".$num_pedido."'")or die("erro no update editarQtdPedido");
-				
+				$valCubagem = ((float)$returnCUB['CUBAGEM'] * (float)$qtdEditada);	
+
 				$editar = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag` SET `pedido`= '".$qtdEditada."', palete = '--', troca='V', cubagem='".round($valCubagem,3)."'  WHERE `num_pedido`='".$num_pedido."' and nota_fiscal = '".$nota_fiscal."' and produto = '".$returnQTD['ITEM']."' and lote = '".$returnQTD['LOTE']."'")or die("erro no update de edicao 1");
 				
 				$editar2 = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag_hist` SET `pedido`= '".$qtdEditada."', `palete` = '--', `troca`='V', `cubagem`='".$valCubagem."' WHERE `num_pedido`='".$num_pedido."' and nota_fiscal = '".$nota_fiscal."' and produto = '".$returnQTD['ITEM']."' and lote = '".$returnQTD['LOTE']."'")or die("erro no update de edicao 3");
 			}
 			
-			
 			//Verifica se no pedido tem item composto
 			$buscaNF = mysqli_query($con,"select nota_fiscal NF from sistemas_ag.qtd_composto where num_pedido = '".$num_pedido."' group by nota_fiscal")or die("erro do sqlQtdRest");
-
 			$rowsNF = mysqli_num_rows($buscaNF);
 			
 			if($rowsNF > 0){
-				
 				//Verifico se já foi feito um pedido composto para mesma nota e produto
 				$busca_qtdComp = mysqli_query($con,"select 
 													count(distinct num_pedido) pedidos
@@ -1355,8 +1337,6 @@
 				
 				while($ReturnNF = mysqli_fetch_array($buscaNF)){
 					$nf_fiscal = $ReturnNF['NF'];
-					//echo "NF encaminhada: ".$nota." NV: ".$nf_fiscal."\n";
-					
 			
 					//Aqui verifico qual quantidade composta esta sendo deletada
 					$sqlQTD = mysqli_query($con,"SELECT 
@@ -1391,7 +1371,6 @@
 						}else{
 							$valorAtual = (int)$resultQTD['total'];
 						}
-						//echo "Sobra: ".$sobraQTD." ValorAtual: ".$valorAtual." QtdPedido: ".$qtd_pedido." ".$resultQTD['total']." ".$resultQTD['qtd_pedida']."\n";
 						
 						if($resultComposto['pedidos'] == 1){
 							$editar3 = mysqli_query($con,"UPDATE sistemas_ag.clientes_ag SET `qtd_composto`= $qtd_nova, `time_stamp` = now() WHERE `nota_fiscal`= '".$nf_fiscal."' AND qtd_composto = (SELECT 
@@ -1407,16 +1386,13 @@
 							$editar4 = mysqli_query($con,"UPDATE sistemas_ag.clientes_ag_hist SET `qtd_composto`=  ".$valorAtual.", `time_stamp` = now(), `qtd_disp`= '$sobraQTD' WHERE `nota_fiscal`= '".$nf_fiscal."' AND qtd_composto = (SELECT qtd_composto FROM (SELECT MAX(qtd_composto) qtd_composto FROM sistemas_ag.clientes_ag_hist
 							WHERE nota_fiscal = '".$nf_fiscal."') AS tb1)")or die("erro no update de edicao 2 hist 2");
 						}
-						
-						
-						
+									
 						if($editar3 && $editar4){
 							$editarQtdComposto = mysqli_query($con,"UPDATE `sistemas_ag`.`qtd_composto` SET `qtd_acumulada` = ".$valorAtual.", qtd_pedida = '".$qtd_nova."' WHERE `num_pedido` = '".$num_pedido."' and nota_fiscal = '".$nota_fiscal."'")or die("erro no update editarQtdComposto");
 						}
 					}
 				}
-			}
-			
+			}	
 		}else{
 			$qtdEditada = $qtd_nova;
 			
@@ -1428,8 +1404,6 @@
 				$cub = (((int)$cubagem/(int)$pedido) * (int)$qtd_nova);
 			}
 		}
-
-		
 		
 		$consult = mysqli_query($con,"select count(*) cont, troca from sistemas_ag.clientes_ag where num_pedido = '".$num_pedido."' and nota_fiscal = '".$nota_fiscal."' and produto = '".$produto."' and lote = '".$lote."'  group by num_pedido,nota_fiscal,lote,produto")or die("erro no select consult");
 		$resp = mysqli_fetch_array($consult);
@@ -1444,8 +1418,7 @@
 			}else{	
 				$limpar1 = mysqli_query($con,"delete a from sistemas_ag.clientes_ag a, sistemas_ag.clientes_ag b where a.num_pedido = '".$num_pedido."' and a.num_pedido = b.num_pedido and a.counter < b.counter and a.nota_fiscal = b.nota_fiscal and a.produto = b.produto and a.lote = b.lote")or die("erro no delete limpar1");
 				$limpar2 = mysqli_query($con,"delete a from sistemas_ag.clientes_ag_hist a, sistemas_ag.clientes_ag_hist b where a.num_pedido = '".$num_pedido."' and a.num_pedido = b.num_pedido and a.counter < b.counter and a.nota_fiscal = b.nota_fiscal and a.produto = b.produto and a.lote = b.lote")or die("erro no delete limpar2");
-			}
-			
+			}	
 		}else{
 			$timer1 = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag` SET `time_stamp`=now() WHERE `num_pedido`='".$num_pedido."'")or die("erro no update de timer1");
 		}
@@ -1458,7 +1431,6 @@
 		
 			$editar2 = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag_hist` SET `pedido`= '".$qtdEditada."', palete = '--', troca='V', cubagem='".$cub."', qtd_composto='".$qtd_nova."' WHERE `num_pedido`='".$num_pedido."' and nota_fiscal = '".$nota_fiscal."' and produto = '".$produto."' and lote = '".$lote."'")or die("erro no update de edicao");
 		}
-		
 		
 		if($editar && $editar2){
 			$limpar = mysqli_query($con,"DELETE FROM `sistemas_ag`.`lista_gerado`");
@@ -1622,7 +1594,6 @@
 	if($action == "unirPedidos"){
 			$origin = array("[","]");
 			$destiny = array("","");
-			
 			$cnpj = $_REQUEST['cnpj'];
 			$perfil = $_REQUEST['perfil'];
 			$num_pedido = str_replace($origin,$destiny,$_REQUEST['num_pedido']);
@@ -1652,16 +1623,10 @@
 			
 			$prefix = substr($num_pedido,0,6);
 			$veiculo_id = $prefix.".U".$numbers;
-			
 			$qtdVirgula = substr_count($num_pedido,",");
 			if($qtdVirgula > 0){
 				$pedido = explode(",",$num_pedido);
-				
-				for($i=0; $i <= $qtdVirgula; $i++){
-					
-					//echo $pedido[$i]."<br>";
-					
-					
+				for($i=0; $i <= $qtdVirgula; $i++){	
 					$insert = mysqli_query($con,"insert into sistemas_ag.veiculos_ag (cnpj,num_pedido,qtd_veiculos,id_veiculo,tipo,cliente) values ('".$cnpj."','".trim($pedido[$i])."',1,'".$veiculo_id."','PED','".$client."')")or die(mysqli_error($con));
 					//Pega o id_veiculo para unificar os pedidos a um veículo
 					$pegaId = mysqli_query($con,"select id_veiculo from sistemas_ag.veiculos_ag where num_pedido = '".trim($pedido[$i])."'")or die("erro no select pegaId");
@@ -1673,9 +1638,7 @@
 						while($returnPedido = mysqli_fetch_array($pegaPedido)){
 							$updatePedido = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag` SET `num_pedido`='".$id_veiculo."', time_stamp=now() WHERE num_pedido = '".$returnPedido['num_pedido']."';")or die("erro no updatePedido");
 						}
-					}
-					
-					
+					}		
 				}		
 			}else{
 				$pedido = $num_pedido;
@@ -1692,7 +1655,6 @@
 					}
 				}
 			}
-				
 			if($insert){	
 				$limpar = mysqli_query($con,"truncate sistemas_ag.lista_gerado")or die(mysqli_error($con));	
 				//buscarPedidos($perfil, $cnpj, $con, $conAG);
@@ -1729,16 +1691,12 @@
 					$client = $cnpj;
 				}
 				
-				
-				
 				$query = mysqli_query($con,"select num_pedido,  mid(num_pedido,1,4) prefix from sistemas_ag.veiculos_ag where cnpj = '".$cnpj."' and (id_veiculo is null or id_veiculo = '' or id_veiculo = '--') and (tipo = 'VEI' or tipo is null or tipo = '') limit 1")or die("erro no select query busca pedido2");
 				$result = mysqli_fetch_array($query);
 				$rows = mysqli_num_rows($query);
 				
 				
 				if($rows > 0){
-				
-		
 					for($i=1;$i<=$quantity;$i++){
 						$pedido_id = $result['num_pedido']."-".$i;
 						$veiculo_id = $result['prefix'].$dataSecurity;
@@ -1806,8 +1764,7 @@
 				$db_data = array();
 				while($result = mysqli_fetch_array($sql)){
 					$db_data[] = $result;
-				}
-				
+				}	
 				echo json_encode($db_data);	
 		}
 		
@@ -1829,13 +1786,11 @@
 			while($result = mysqli_fetch_array($sql)){
 				$db_data[] = $result;
 			}
-				
 			echo json_encode($db_data);	
 		}
 
 		//Função para cadastrar o agendamento
 		if($action == "agendamento"){
-			
 			$pedidos = $_REQUEST['num_pedido'];
 			$data = $_REQUEST['data']; //data
 			$hora = $_REQUEST['hora']; //hora
@@ -1843,12 +1798,9 @@
 			$cliente = $_REQUEST['cliente'];
 			$clientes = $_REQUEST['cliente'];
 			$perfil = $_REQUEST['perfil'];
-			
 			$valores = $data." ".$hora;
-			
 			$cnpj_transp = isset($_REQUEST['cnpjTransp']) ? $_REQUEST['cnpjTransp'] : "";
-			$nome_transp = isset($_REQUEST['transp']) ? $_REQUEST['transp'] : "";
-			
+			$nome_transp = isset($_REQUEST['transp']) ? $_REQUEST['transp'] : "";			
 			$ajudante = $_REQUEST['ajudante'];
 			
 			$stid = $conAG->query("select  
@@ -1868,7 +1820,6 @@
 							and k.entow_ent_id = c.entdf_id 
 							and k.entow_ent_id = '".$cnpj."'");
 
-	
 			$stid->execute();			
 			$row = $stid->fetch();
 			$endereco = $row['END'];
@@ -1879,16 +1830,6 @@
 			$cod_cli = $row['ID_CLIENTE'];
 			$email_cli = $row['EMAIL'];
 			$tel_cli = $row['TEL'];
-			
-			//$endereco = 'ROD SENADOR JOSE ERMIRIO DE MORAES';
-			//$numero = '10.2';
-			//$bairro = 'IPORANGA';
-			//$cep_cli = '18087125';
-			//$cidade = 'Sorocaba';
-			//$cod_cli = '329';
-			//$email_cli = 'COMERCIAL@EADIAURORA.COM.BR';
-			//$tel_cli = '15 32354800';			
-			
 				
 			//Verifica se está flegado sem processo
 			$pegaId2 = mysqli_query($con,"select id_veiculo, num_pedido, tipo, cliente from sistemas_ag.veiculos_ag where (num_pedido = '".$pedidos."' or id_veiculo = '".$pedidos."')")or die("erro no select pegaId");
@@ -1902,8 +1843,6 @@
 			$rowId = mysqli_num_rows($pegaId);
 			
 			if($rowId > 0){
-				//$blt = "Y";
-				
 				$arr1 = array();
 				$arr2 = array();
 				$returnId = mysqli_fetch_array($pegaId);
@@ -1928,21 +1867,17 @@
 						$qtd_pedida = $qtd_ped['soma'];
 					}
 					
-				
-				
 				$pegaQtd = mysqli_query($con,"select sum(qtd_veiculos) qtd_veiculo from sistemas_ag.veiculos_ag where (id_veiculo = '".$num_pedido."' or num_pedido = '".$num_pedido."')")or die("erro no select pegaQtd");
 				$returnQtd = mysqli_fetch_array($pegaQtd);
 				$qtd_veiculo = intval($returnQtd['qtd_veiculo']);
 				
 			}else{	
-				//$blt = "N";
 				$returnId = mysqli_fetch_array($pegaId);
 				$num_pedido = $_REQUEST['num_pedido'];
 				$qtd_veiculo = 1;
 				$qtd_pedida = 1;
 			}
 				
-
 			$select = mysqli_query($con,"select * from sistemas_ag.coleta_ag where num_pedido = '".$num_pedido."' and cnpj_transp = '".$cnpj_transp."'")or die("erro no select verifica coleta existe");
 			$busca_end = mysqli_query($con,"select 
 											end_transp,
@@ -1996,7 +1931,6 @@
 				}
 			}
 			
-			
 			$consultAgenda = mysqli_query($con,"select (count(*) + ".$qtd_pedida.") total from sistemas_ag.agendamento_ag where data = '".$valores."'")or die("erro no select consultAgenda");
 			$returnAgenda = mysqli_fetch_array($consultAgenda);
 			
@@ -2004,10 +1938,7 @@
 			$returnPermissao = mysqli_fetch_array($consultPermissao);
 			
 			if($returnAgenda['total'] <= 6){
-				
 				if($returnId['tipo'] == 'VEI'){
-					//$y = "VEI";
-					
 					$num = explode("-",$returnId['num_pedido']);
 					$nped = $num[0];
 					$pegaSub = mysqli_query($con,"select num_pedido from sistemas_ag.veiculos_ag where num_pedido like '%".$returnId['num_pedido']."%'")or die("erro no select pegaSub");
@@ -2018,7 +1949,6 @@
 						('".$resultSub['num_pedido']."','$valores','$cnpj','$clientes','$endereco','$numero','$bairro','$cep_cli','$cidade',$cod_cli,'$cnpj_transp','$nome_transp','$email_cli',".$qtd_veiculo.",'".$ajudante."','0');")or die("error no insert do agendamento 2");
 					}
 				}elseif($returnId['tipo'] == 'PED'){
-						//$y = "PED";
 						$agendar = mysqli_query($con,"insert into sistemas_ag.agendamento_ag (num_pedido,data,cnpj_cli,nome_cli,endereco,numero,bairro,cep_cli,cidade,cod_cli,cnpj_transp,transportadora,email_cli,qtd_veiculos,ajudante,status)
 						select 
 							'$num_pedido',
@@ -2041,11 +1971,7 @@
 							on a.num_pedido = b.num_pedido where id_veiculo = '".$num_pedido."' 
 							group by cliente,id_veiculo")or die("error no insert do agendamento 3 ".mysqli_error($con));
 						
-					
-				}else{
-					
-					//echo $endereco."<br>";
-					//$y = "NULL";
+				}else{		
 					$agendar = mysqli_query($con,"insert into sistemas_ag.agendamento_ag (num_pedido,data,cnpj_cli,nome_cli,endereco,numero,bairro,cep_cli,cidade,cod_cli,cnpj_transp,transportadora,email_cli,qtd_veiculos,ajudante,status)
 					values
 					('$pedidos','$valores','$cnpj','$clientes','$endereco','$numero','$bairro','$cep_cli','$cidade',$cod_cli,'$cnpj_transp','$nome_transp','$email_cli',".$qtd_veiculo.",'$ajudante','0');")or die("error no insert do agendamento 4 ".mysqli_error($con));
@@ -2062,7 +1988,6 @@
 			}else{
 				echo "2";
 			}
-			
 			$conAG = null;
 			mysqli_close($con);
 		}
@@ -2077,20 +2002,17 @@
 			//Aqui verifica a categoria do usuario se é cliente 1 ou transportadora 2
 			if($category !== "1"){
 				$transp = $cnpj;
-				
-				
-				
 				$busca = mysqli_query($con,"select 
 												group_concat('''',cnpj_cli,'''') as cnpj_cli, 
 												case when permissao is null then '0' else group_concat(permissao) end permissao  
-											from sistemas_ag.cad_transp_ag where cnpj_transp = '01777936000196'")or die(mysqli_error($con));
+											from sistemas_ag.cad_transp_ag where cnpj_transp = '".$transp."'")or die(mysqli_error($con));
 				$rows = mysqli_num_rows($busca);
 				if($rows > 0){
 					$cnpj_cli = mysqli_fetch_array($busca);
 					if($cnpj_cli[0]){
 						$cnpj = $cnpj_cli[0];
 					}else{
-						$cnpj = "SN";
+						$cnpj = "";
 					}
 					$permissao = $cnpj_cli[1];
 				}
@@ -2131,11 +2053,8 @@
 			}
 			
 			if($transp){
-	
 				if($category == "1"){
 					$perfil = " b.cnpj_cli ";
-					
-					
 					
 					$sql = mysqli_query($con,"select 
 													num_pedido,
@@ -2162,6 +2081,14 @@
 					}else{
 						$per = "''";
 					}
+					
+					//echo $busca." - ".$per." - ".$transp."<br>";
+					
+					if($busca){
+						$linked = " a.cnpj_cli in (".$busca.") and "; 
+					}else{
+						$linked = "";
+					}
 		
 						$sql = mysqli_query($con,"select 
 										a.num_pedido,
@@ -2170,14 +2097,12 @@
 										a.nome_cli,
 										a.cnpj_transp
 									from sistemas_ag.agendamento_ag a
-										where a.cnpj_cli in (".$busca.") 
-											  and case when cnpj_transp = '' then a.cnpj_cli in (".$per.") else a.cnpj_transp end
+										where $linked
+											  case when cnpj_transp = '' then a.cnpj_cli in (".$per.") else a.cnpj_transp end
 											  and a.cnpj_transp in (".$transp.",'') 
 											  group by a.num_pedido
-											  order by length(a.num_pedido), a.num_pedido asc")or die("<b>erro do select de consultar agendamento 3</b>");				
-		
+											  order by length(a.num_pedido), a.num_pedido asc")or die("erro do select de consultar agendamento 3 ".mysqli_error($con));				
 				}
-		
 				$rows = mysqli_num_rows($sql);
 	
 			}else{
@@ -2250,7 +2175,6 @@
 														and iop.document in ('".$num_pedido."')
 														group by iop.document,io.id_in_out,time_out,time_release_in,af.stat,pf.stat,af.time_aen");
 				
-
 				$pesq->execute();
 				$lines = $pesq->fetch();
 				$pesq->execute();
@@ -2262,11 +2186,8 @@
 							$insertDados = "";
 						}
 					}else{
-						
 						$pos = strpos($num_pedido,"_");
-						
-						    if(empty($pos) == 1){
-								
+						    if(empty($pos) == 1){	
 								$stat[] = true;	
 								$insertDados = mysqli_query($con,"insert into sistemas_ag.lista_agendados 
      														(
@@ -2286,14 +2207,10 @@
 																".$sub.",
 																".$horas."
 															)")or die(mysqli_query($con));
-								
-				
-
 							}else{
 								$stat[] = false;
 								$insertDados = "";
 							}
-					
 					}
 				}
 				
@@ -2318,7 +2235,11 @@
 					echo json_encode($db_data);	
 				}
 		}else{
-			echo "0";
+			$db_data = array();
+			while($result = mysqli_fetch_array($sql)){
+				$db_data[] = $result;
+			}
+			echo json_encode($db_data);
 		}		
 	}
 	
@@ -2401,6 +2322,18 @@
 		}	
 	}
 	
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////   ORDEM DE COLETA  ////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	
+	
 	//Consulta CNPJ da transportadora para ordem de coleta
 	if($action == "cnpjColeta"){
 		$cnpj = $_REQUEST['cnpj'];
@@ -2440,8 +2373,7 @@
 		$db_data = array();
 		while($dados = mysqli_fetch_array($query)){
 			$db_data[] = $dados;
-		}
-		
+		}	
 		echo json_encode($db_data);
 	}
 	
@@ -2473,20 +2405,36 @@
 		
 				$permitido = mysqli_fetch_array($verifTransp);
 				
+				if($cnpj){
+					$linked = "a.cnpj_cli in (".$cnpj.") and case when a.cnpj_transp = '' then a.cnpj_cli in (".$permitido['clientes'].") else a.cnpj_transp end and";
+				}else{
+					$linked = "";
+				}
+				
 				$buscaPermissao = mysqli_query($con,"select 
 															a.num_pedido
 														from sistemas_ag.agendamento_ag a
-														where a.cnpj_cli in (".$cnpj.")
-														and case when a.cnpj_transp = '' then a.cnpj_cli in (".$permitido['clientes'].") else a.cnpj_transp end
-														and a.cnpj_transp in (".$transp.",'') 
+														where $linked a.cnpj_transp in ('".$transp."','') 
 														group by a.num_pedido
-														order by length(a.num_pedido), a.num_pedido asc")or die("erro no select buscaPermissao");
+														order by length(a.num_pedido), a.num_pedido asc")or die("erro no select buscaPermissao ".mysqli_error($con));
 				$resPermissao = mysqli_num_rows($buscaPermissao);
 						
 				while($infPermissao = mysqli_fetch_array($buscaPermissao)){
 					$pedidoPermitido[] = $infPermissao['num_pedido'];
 				}
-		}		
+		}	
+
+        if($transp){
+			$attech1 = "and a.cnpj_transp in (".$transp.",'')";
+			if($cnpj){
+				$attech2 = " and a.cnpj_cli in (".$cnpj.") ";
+			}else{
+				$attech2 = "";
+			}
+		}else{
+			$attech1 = "";
+			$attech2 = " and a.cnpj_cli in (".$cnpj.") ";
+		}	
 				
 			$total = mysqli_query($con,"select 
 											num_pedido,
@@ -2496,7 +2444,7 @@
 											a.email_cli,
 											a.cnpj_transp
 										  from sistemas_ag.agendamento_ag a 
-										  where status <> '1' and a.cnpj_transp in (".$transp.",'') and a.cnpj_cli in (".$cnpj.") group by num_pedido")or die("erro do select busca agenda total");	
+										  where status <> '1' $attech1 $attech2 group by num_pedido")or die("erro do select busca agenda total ".mysqli_error($con));	
 				
 			$linhas = mysqli_num_rows($total);
 			if($linhas > 0){
@@ -2531,15 +2479,15 @@
 								
 							}else{
 								$db_data[] = $result;
-							}
-							
+							}	
 						}
 					}
 				}				
 			}else{
-				$db_data[] = "";
+				while($result = mysqli_fetch_array($total)){
+					$db_data[] = "";
+				}
 			}
-		
 		echo json_encode($db_data);
 	}
 	
@@ -2568,13 +2516,11 @@
 		while($result = mysqli_fetch_array($sql)){
 			$db_data[] = $result;
 		}
-		
 		echo json_encode($db_data);
 	}
 	
 	//Aqui cadastro a ordem de coleta
-	if($action == "cadastrarColeta"){
-	
+	if($action == "cadastrarColeta"){	
 		$origin = array("/",".","-");
 		$destiny = array("","","");
 		
@@ -2613,22 +2559,12 @@
 		$categoria = $_REQUEST['perfil'];
 		$tipo = $_REQUEST['origem'];
 
-		//echo $num_pedido."<br>".$cnpj_transp."<br>";
-
 		//Verifico se o CNPJ da transportadora existe no agendamento
 		if($categoria === "1"){
 			$verAgenda = mysqli_query($con,"select count(*) from sistemas_ag.agendamento_ag where num_pedido = '".$num_pedido."' and cnpj_transp = '".$cnpj_transp."'")or die("erro no select verAgenda 1"); 
 			$register = mysqli_fetch_row($verAgenda);
 			if($register[0] == 0){
 				$altAgenda = mysqli_query($con,"UPDATE `sistemas_ag`.`agendamento_ag` SET `cnpj_transp`='".$cnpj_transp."', transportadora='".$nome_transp."' WHERE `num_pedido`='".$num_pedido."'")or die("erro no update no altAgenda 1");
-				//$altAgendaHist = mysqli_query($con,"UPDATE `sistemas_ag`.`agendamento_ag_hist` SET `cnpj`='".$cnpj_transp."', nome='".$nome_transp."' WHERE `num_pedido`='".$num_pedido."'")or die("erro no update no altAgendaHist");
-				/*
-				if($altAgenda){
-					echo "OK";
-				}else{
-					echo "FAIL";
-				}
-				*/
 			}
 			
 			//Vincula o cnpj da transportadora ao cliente
@@ -2640,15 +2576,8 @@
 													values 
 												('".trim($cnpj_cli)."','".trim($cnpj_transp)."','".$nome_transp."','".$nome_cli."','".$tipo."')")or die("error na inserção do vinculo");
 			}
-			
 		}else{
-			/*
-			$verAgenda = mysqli_query($con,"select count(*) from sistemas_ag.agendamento_ag where num_pedido = '".$num_pedido."' and cnpj_transp = ''")or die("erro no select verAgenda 2"); 
-			$register = mysqli_fetch_row($verAgenda);
-			if($register[0] > 0){
-				$altAgenda = mysqli_query($con,"UPDATE `sistemas_ag`.`agendamento_ag` SET `cnpj_transp`='".$cnpj_transp."', transportadora='".$nome_transp."' WHERE `num_pedido`='".$num_pedido."'")or die("erro no update no altAgenda 2");
-			}
-			*/
+			
 		}
 		
 		//Verifica se é pedido unificado
@@ -3002,9 +2931,13 @@
 			$stat = "N";
 			//NÃO FORAM ENCONTRADAS ORDENS DE COLETA QUE NECESSITEM DE CORREÇÃO!
 			$aviso = "0";
-		}else{
+		}elseif($type === "Y"){
 			$stat = "Y";
 			//NÃO FORAM ENCONTRADAS ORDENS DE COLETA VALIDADAS!
+			$aviso = "0";
+		}else{
+			$stat = "L";
+			//NÃO FORAM ENCONTRADAS ORDENS DE COLETA CANCELADAS!
 			$aviso = "0";
 		}
 			
@@ -3044,9 +2977,9 @@
 							ORDER BY LENGTH(a.num_pedido) , a.num_pedido ASC")or die("Erro do select de consultar coleta ".mysqli_error($con));
 							
 		$rows = mysqli_num_rows($sql);
-
+        
+		$truncate = mysqli_query($con,"truncate sistemas_ag.lista_coleta")or die(mysqli_error($con));
 		if($rows > 0){
-			$truncate = mysqli_query($con,"truncate sistemas_ag.lista_coleta")or die(mysqli_error($con));
 			$id = 0;
 			while($result = mysqli_fetch_array($sql)){
 				$id = $id+1;
@@ -3121,7 +3054,8 @@
 														cnh,
 														cpf_motor,
 														cnpj_transp,
-														documento
+														documento,
+														data_vencida
 													)
     												values
     												(
@@ -3142,7 +3076,8 @@
 														'".$cnh_motor."',
 														'".$cpf_motor."',
 														'".$cnpj_transp."',
-														'".$documento_motor."'
+														'".$documento_motor."',
+														'".$data_validade."'
 													)
 												")or die(mysqli_error($con));
 				}			
@@ -3166,7 +3101,8 @@
 													cnh,
 													cpf_motor,
 													cnpj_transp,
-													documento
+													documento,
+													data_vencida
 												  from sistemas_ag.lista_coleta
 												  	where cnpj = '".$codigoId."'
 													and status = '".$stat."'
@@ -3178,6 +3114,71 @@
 				
 				echo json_encode($db_data);
 			}	
+		}else{
+			$db_data = array();
+				$listaColeta = mysqli_query($con,"select 
+													num_pedido,
+													qtd_veiculos,
+													cliente,
+													transportadora,
+													data_agenda,
+													motorista,
+													placa,
+													problema,
+													descricao,
+													carreta,
+													bitrem,
+													container,
+													cnh,
+													cpf_motor,
+													cnpj_transp,
+													documento,
+													data_vencida
+												  from sistemas_ag.lista_coleta
+												  	where cnpj = '".$codigoId."'
+													and status = '".$stat."'
+													group by num_pedido
+											");
+				while($result = mysqli_fetch_array($listaColeta)){
+					$db_data[] = $result;
+				}
+				
+				echo json_encode($db_data);
+		}
+	}
+	
+	//Corrigir a ordem de coleta
+	if($action == "corrigirColeta"){
+		$origin = array("/",".","-");
+		$destiny = array("","","");
+		
+		$pedido    = trim($_REQUEST['num_pedido']);
+		$transp    = trim($_REQUEST['transp']);
+		$cnpj      = trim(str_replace($origin,$destiny,$_REQUEST['cnpjTransp']));
+		$motor     = trim($_REQUEST['motorista']);
+		$cpf       = trim(str_replace($origin,$destiny,$_REQUEST['cpfMotor']));
+		$doc       = trim(str_replace($origin,$destiny,$_REQUEST['documento']));
+		$cnh       = trim($_REQUEST['cnh']);
+		$dataVencida = trim($_REQUEST['dataVencida']);
+		$cavalo    = trim($_REQUEST['placa']);
+		$carreta   = trim($_REQUEST['carreta']);
+		$bitrem    = trim($_REQUEST['bitrem']);
+		$container = trim($_REQUEST['container']);
+		$status    = "A";
+		$pos = strpos($pedido,"-KIT");
+		
+		if($pos){
+		   $num_pedido = substr($pedido,0,$pos);
+		}else{
+		   $num_pedido = $pedido;	
+		}
+		
+		$corrigir = mysqli_query($con,"UPDATE `sistemas_ag`.`coleta_ag` SET nome_transp='".strtoupper($transp)."', cnpj_transp='$cnpj', nome_motor='".strtoupper($motor)."', cpf_motor='$cpf', documento_motor='$doc', cnh_motor='".strtoupper($cnh)."', data_validade='$dataVencida', placa='".strtoupper($cavalo)."', pl_carreta='".strtoupper($carreta)."', pl_bitrem='".strtoupper($bitrem)."', pl_container='".strtoupper($container)."', `status`='$status' WHERE `num_pedido`like '%$num_pedido%';")or die("error na update corrigir");
+		
+		if($corrigir){
+			echo "1";
+		}else{
+			echo "0";
 		}
 	}
 	
