@@ -56,7 +56,7 @@
 									tb_nivel_usuario,
 									logado,
 									tb_solicitacao
-								  from loginbase.new_usuarios_ag where tb_cpf = '".$usuario."' and tb_senha = '".$senha."'
+								  from loginbase.new_usuarios_ag where tb_cpf = '".$usuario."' and tb_senha = '".$senha."' and tb_ativado = '1'
 								  group by tb_cpf");
 		$rows = mysqli_num_rows($sql);
 		if($rows > 0){
@@ -1258,6 +1258,30 @@
 						
 		buscarPedidos($categoria, $cnpj, $con, $conAG);	
 	}
+	
+	//Aqui verifico se a data foi bloqueada pelo atendimento
+	if($action == "verificaBloq"){	
+		$db_data = array();
+		$sql = mysqli_query($con,"select 
+									 datas
+								  from (select data datas, count(*) total_horas from sistemas_ag.data_block  group by data) as tb1 where total_horas = 6")or die(mysqli_error($con));
+		while($result = mysqli_fetch_array($sql)){
+			$db_data[] = $result;
+		}
+		echo json_encode($db_data);
+	}
+	
+	//Aqui verifico se a hora foi bloqueada pelo atendimento
+	if($action == "hoursBloq"){
+		$day = $_REQUEST['day'];
+		
+		$db_data = array();
+		$sql = mysqli_query($con,"select hora horas from sistemas_ag.data_block where data = '".$day."' order by length(hora), hora asc")or die(mysqli_error($con));
+		while($result = mysqli_fetch_array($sql)){
+			$db_data[] = $result;
+		}
+		echo json_encode($db_data);
+	}
 
 	//Aqui eu consulto os itens no pedido especifico para lista de edição de quantidade
 	if($action == "consultaInfo"){
@@ -1800,6 +1824,24 @@
 			$nome_transp = isset($_REQUEST['transp']) ? $_REQUEST['transp'] : "";			
 			$ajudante = $_REQUEST['ajudante'];
 			
+			if($perfil == '2'){
+				$cnpj_transp = $cnpj;
+				$nome_transp = $clientes;
+				$buscaEmpresa = mysqli_query($con,"select 
+													  a.cnpj_cli, 
+													  a.nome_cli 
+												   from sistemas_ag.cad_transp_ag a inner join sistemas_ag.clientes_ag b
+													    on a.cnpj_cli = b.cnpj 
+														where a.cnpj_transp = '".$cnpj."' 
+														and num_pedido = '".$pedidos."'
+														group by num_pedido")or die("buscaEmpresa ".mysqli_error($con));
+														
+				$resultEmpresa = mysqli_fetch_array($buscaEmpresa);
+				$cnpj = $resultEmpresa['cnpj_cli'];
+				$clientes = $resultEmpresa['nome_cli'];
+				
+			}
+			
 			$stid = $conAG->query("select  
 			 					distinct k.entow_id ID_CLIENTE,
 								c.entdf_dsc NAME,
@@ -1939,11 +1981,12 @@
 					$num = explode("-",$returnId['num_pedido']);
 					$nped = $num[0];
 					$pegaSub = mysqli_query($con,"select num_pedido from sistemas_ag.veiculos_ag where num_pedido like '%".$returnId['num_pedido']."%'")or die("erro no select pegaSub");
-					
+						
 					while($resultSub = mysqli_fetch_array($pegaSub)){
+							
 						$agendar = mysqli_query($con,"insert into sistemas_ag.agendamento_ag 	(num_pedido,data,cnpj_cli,nome_cli,endereco,numero,bairro,cep_cli,cidade,cod_cli,cnpj_transp,transportadora,email_cli,qtd_veiculos,ajudante,status)
 						values
-						('".$resultSub['num_pedido']."','$valores','$cnpj','$clientes','$endereco','$numero','$bairro','$cep_cli','$cidade',$cod_cli,'$cnpj_transp','$nome_transp','$email_cli',".$qtd_veiculo.",'".$ajudante."','0');")or die("error no insert do agendamento 2");
+						('".$resultSub['num_pedido']."','$valores','$cnpj','$clientes','$endereco','$numero','$bairro','$cep_cli','$cidade',$cod_cli,'$cnpj_transp','$nome_transp','$email_cli',".$qtd_veiculo.",'".$ajudante."','0');")or die("error no insert do agendamento 2".mysqli_error($con));
 					}
 				}elseif($returnId['tipo'] == 'PED'){
 						$agendar = mysqli_query($con,"insert into sistemas_ag.agendamento_ag (num_pedido,data,cnpj_cli,nome_cli,endereco,numero,bairro,cep_cli,cidade,cod_cli,cnpj_transp,transportadora,email_cli,qtd_veiculos,ajudante,status)
@@ -2018,7 +2061,7 @@
 				$busca = mysqli_query($con,"select 
 												group_concat('''',cnpj_transp,'''') as cnpj_transp, 
 												case when permissao is null then '0' else permissao end permissao
-											from sistemas_ag.cad_transp_ag where cnpj_cli = '".$cnpj."' ")or die("erro no select busca cliente");
+											from sistemas_ag.cad_transp_ag where cnpj_cli = '".$cnpj."' ")or die("erro no select busca cliente ".mysqli_error($con));
 				$rows = mysqli_num_rows($busca);
 				if($rows > 0){
 					$cnpj_cli = mysqli_fetch_array($busca);
@@ -2391,7 +2434,7 @@
 				$transp = $cnpj;
 				$bring = mysqli_query($con,"select group_concat('''',cnpj_cli,'''') as cnpj_cli, 
 				case when permissao is null then '0' else permissao end permissao
-				from sistemas_ag.cad_transp_ag where cnpj_transp = ".$cnpj."")or die("erro no select busca cliente");
+				from sistemas_ag.cad_transp_ag where cnpj_transp = ".$cnpj."")or die("erro no select busca cliente ".mysqli_error($con));
 				$lays = mysqli_num_rows($bring);
 				if($lays > 0){
 					$cj_cli = mysqli_fetch_array($bring);
@@ -2457,11 +2500,11 @@
 					$str = mysqli_fetch_assoc($status_coleta);
 					
 					if($rows[0] > 0){
-						$db_data[] = "";
+						$db_data[] = $result;
 					}else{
 						
 						if($str['status'] == "Y"){
-							$db_data[] = "";
+							$db_data[] = $result;
 							
 							
 						}else{
@@ -2469,7 +2512,7 @@
 							if($perfil != '1'){
 								
 								if(!in_array($num_pedido,$pedidoPermitido)){
-									$db_data[] = "";
+									$db_data[] = $result;
 								}else{
 									$db_data[] = $result;
 								}
@@ -2481,9 +2524,9 @@
 					}
 				}				
 			}else{
-				while($result = mysqli_fetch_array($total)){
-					$db_data[] = "";
-				}
+				
+					$db_data[] = $result;
+				
 			}
 		echo json_encode($db_data);
 	}

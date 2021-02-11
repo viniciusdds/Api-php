@@ -10,7 +10,8 @@
 					
 				$when = " = '".$cnpj."'";
 				$inner = " = '".$cnpj."'";
-						   
+				
+			
 				$verCont = mysqli_query($con,"select count(*) contLine, num_pedido from sistemas_ag.clientes_ag where num_pedido like '%.%' and num_pedido like '%-%' and palete != '--' and cnpj = '".$cnpj."'")or die("erro no select verCont");
 				$resCont = mysqli_fetch_array($verCont);
 							
@@ -206,10 +207,11 @@
 														and a.status = '2' group by a.num_pedido,produto,lote_serial,lote,nota_fiscal)
 														order by status asc, statusb asc, timestamp asc,  mid(num_pedido,7) asc, mid(num_pedido,1) asc, lote asc limit 200")or die("erro no select verifica pedido");			
 			}else{
-								//Perfil Transportadora
-								$vinculo = "1";
+				
+							//Perfil Transportadora
+							$vinculo = "1";
 								
-										$truck = mysqli_query($con,"SELECT case when count(*) = 1 then group_concat('''',cnpj_cli,'''')
+							$truck = mysqli_query($con,"SELECT case when count(*) = 1 then group_concat('''',cnpj_cli,'''')
 															   else group_concat('''',cnpj_cli,'''') end as cliente_id, 
 																case when permissao is null then '0' else permissao end permissao
 														 FROM sistemas_ag.cad_transp_ag where cnpj_transp = '".$cnpj."'")or die("erro no select truck");
@@ -564,7 +566,9 @@
 									
 									//Retorna para Cliente
 									if($categoria == "1"){
-																					
+													
+												
+													
 												//Valido se tem mais de um código para o mesmo número do pedido		
 												if($value == 1){
 													
