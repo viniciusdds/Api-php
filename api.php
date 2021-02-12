@@ -734,7 +734,7 @@
 		$stid->execute();			
 		$row = $stid->fetch();
 		$client_id = $row['ID_CLIENTE'];
-		$email_cli = $row['EMAIL'];
+		$email_cli = "vinicius.santos@eadiaurora.com.br"; //$row['EMAIL'];
 		$end_cli = $row['END'];
 		$numero_cli = $row['NUMERO'];
 		$bairro_cli = $row['BAIRRO'];
@@ -1162,7 +1162,7 @@
 		$stid->execute();			
 		$row = $stid->fetch();
 		$client_id = $row['ID_CLIENTE'];
-		$email_cli = $row['EMAIL'];
+		$email_cli = "vinicius.santos@eadiaurora.com.br"; //$row['EMAIL'];
 		$end_cli = $row['END'];
 		$numero_cli = $row['NUMERO'];
 		$bairro_cli = $row['BAIRRO'];
@@ -1867,7 +1867,7 @@
 			$cep_cli = $row['CEP'];
 			$cidade = $row['CIDADE'];
 			$cod_cli = $row['ID_CLIENTE'];
-			$email_cli = $row['EMAIL'];
+			$email_cli =  "vinicius.santos@eadiaurora.com.br"; //$row['EMAIL'];
 			$tel_cli = $row['TEL'];
 				
 			//Verifica se está flegado sem processo
@@ -2617,7 +2617,11 @@
 												('".trim($cnpj_cli)."','".trim($cnpj_transp)."','".$nome_transp."','".$nome_cli."','".$tipo."')")or die("error na inserção do vinculo");
 			}
 		}else{
+			$consultaCli = mysqli_query($con,"select cnpj_cli, nome_cli from sistemas_ag.cad_transp_ag where cnpj_transp = '".trim($cnpj_transp)."' group by cnpj_transp")or die(mysqli_error($con));
 			
+			$retornoCli = mysqli_fetch_array($consultaCli);
+			$cnpj_cli = $retornoCli['cnpj_cli'];
+			$nome_cli = $retornoCli['nome_cli'];
 		}
 		
 		//Verifica se é pedido unificado
@@ -3020,6 +3024,7 @@
         
 		$truncate = mysqli_query($con,"truncate sistemas_ag.lista_coleta")or die(mysqli_error($con));
 		if($rows > 0){
+			
 			$id = 0;
 			while($result = mysqli_fetch_array($sql)){
 				$id = $id+1;
@@ -3072,8 +3077,11 @@
 				$def = mysqli_fetch_array($defeito);
 				
 				if($row['STATUS'] == "FINALIZADO"){
+					
 					$insert = "";
 				}else{
+					
+					
 					
 					$insert = mysqli_query($con,"insert into sistemas_ag.lista_coleta 
 													(
