@@ -3016,7 +3016,7 @@
 								left join
                                 sistemas_ag.agendamento_ag d
                                 on a.num_pedido = d.num_pedido
-							where d.data <> '' and a.status = '".$stat."' and a.cnpj_transp in (".$pesq.") and a.cnpj_cli ".$search."
+							where  a.status = '".$stat."' and a.cnpj_transp in (".$pesq.") and a.cnpj_cli ".$search."
 							group by case when a.num_pedido like '%KIT%' then mid(a.num_pedido,1,POSITION('-KIT' in a.num_pedido)-1) else a.num_pedido end
 							ORDER BY LENGTH(a.num_pedido) , a.num_pedido ASC")or die("Erro do select de consultar coleta ".mysqli_error($con));
 							
@@ -3024,6 +3024,7 @@
         
 		$truncate = mysqli_query($con,"truncate sistemas_ag.lista_coleta")or die(mysqli_error($con));
 		if($rows > 0){
+			
 			
 			$id = 0;
 			while($result = mysqli_fetch_array($sql)){

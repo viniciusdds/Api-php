@@ -11,7 +11,7 @@
 				$when = " = '".$cnpj."'";
 				$inner = " = '".$cnpj."'";
 				
-			
+				$limpa = mysqli_query($con,"truncate sistemas_ag.lista_gerado")or die(mysqli_error($con));
 				$verCont = mysqli_query($con,"select count(*) contLine, num_pedido from sistemas_ag.clientes_ag where num_pedido like '%.%' and num_pedido like '%-%' and palete != '--' and cnpj = '".$cnpj."'")or die("erro no select verCont");
 				$resCont = mysqli_fetch_array($verCont);
 							
@@ -708,7 +708,8 @@
 						echo json_encode($db_data);
 						
 					}else{
-						echo "0";
+						$db_data[] = "";
+						echo json_encode($db_data);
 					}// fim do if do check		
 	}
 	
