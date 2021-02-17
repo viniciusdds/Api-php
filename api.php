@@ -2525,7 +2525,7 @@
 				}				
 			}else{
 				
-					$db_data[] = $result;
+					$db_data[] = "";
 				
 			}
 		echo json_encode($db_data);
