@@ -2,7 +2,7 @@
 	$action = $_REQUEST["action"];
 	//$action = $_POST["acao"];
 	
-	$con = mysqli_connect("localhost","adminwebsorocaba","VmtefuQffnq6T6US","homologacao_ag");
+	$con = mysqli_connect("localhost","root","","loginbase");
 
 	if(!$con){
 		die("Falha na conexão: ".mysqli_error($con));
@@ -54,11 +54,10 @@
 									tb_email,
 									tb_ativado,
 									tb_nivel_usuario,
-									logado
-									-- tb_solicitacao
-								  from homologacao_ag.new_usuarios_ag where tb_cpf = '".$usuario."' and tb_senha = '".$senha."' and tb_ativado = '1'
-								  group by tb_cpf")or die(mysqli_error($con));
-								  
+									logado,
+									tb_solicitacao
+								  from loginbase.new_usuarios_ag where tb_cpf = '".$usuario."' and tb_senha = '".$senha."' and tb_ativado = '1'
+								  group by tb_cpf");
 		$rows = mysqli_num_rows($sql);
 		if($rows > 0){
 			$db_data['resp'] = "1";
@@ -87,10 +86,10 @@
 		$email  = $_REQUEST['email'];
 		$perfil  = $_REQUEST['perfil'];
 		
-		$sql = mysqli_query($con,"select * from homologacao_ag.new_usuarios_ag where tb_cpf = '".$documento."'");
+		$sql = mysqli_query($con,"select * from loginbase.new_usuarios_ag where tb_cpf = '".$documento."'");
 		$rows = mysqli_num_rows($sql);
 		if($rows == 0){
-			$insert = mysqli_query($con,"insert into homologacao_ag.new_usuarios_ag 
+			$insert = mysqli_query($con,"insert into loginbase.new_usuarios_ag 
 													 (
 														tb_cnpj,
 														tb_empresa,
@@ -156,14 +155,14 @@
 		$senha = geraSenha(5, true, false);
 		$senhacrip = md5($senha);
 		
-		$alterar  = mysqli_query($con,"UPDATE homologacao_ag.new_usuarios_ag SET tb_senha='".$senhacrip."', senha_decrypt='".$senha."' WHERE tb_cpf = '".$login."'");
+		$alterar  = mysqli_query($con,"UPDATE loginbase.new_usuarios_ag SET tb_senha='".$senhacrip."', senha_decrypt='".$senha."' WHERE tb_cpf = '".$login."'");
 		
 		if($alterar){
 				date_default_timezone_set('America/Sao_Paulo');
 				$ip = getenv("REMOTE_ADDR");
 				$to = $email;
 				$destino = $email; // Informe o destinatário
-				$emitente = 'intranet_service@eadiaurora.com.br'; // Informe o Emitente
+				$emitente = 'cadastro@eadiaurora.com.br'; // Informe o Emitente
 				
 				$mensagem = '<h5><strong>LOGIN:</strong> '. $login ."</b><br /></h5>";
 				"<b>".$mensagem .='<strong>NOVA SENHA:</strong> '. $senha ."<br /><br />";
@@ -189,7 +188,7 @@
 					$mail->From = $emitente; 
 					$mail->FromName = "Redefinição de Senha"; 
 					$mail->AddAddress ($to); //
-					//$mail->AddBcc('deivid.santos@eadiaurora.com.br'); // Copia
+					$mail->AddBcc('deivid.santos@eadiaurora.com.br'); // Copia
 					//$mail->AddBcc('caroline.silva@eadiaurora.com.br'); // Copia
 					//$mail->AddBcc('vinicius.santos@eadiaurora.com.br'); // Copia
 					$mail->WordWrap = 50; 
@@ -231,7 +230,7 @@
 									 tb_cpf,
 									 tb_email,
 									 tb_nivel_usuario
-								  from homologacao_ag.new_usuarios_ag where tb_cpf = '".$cpf."' and tb_nivel_usuario = '".$perfil."' and tb_ativado = '1'");
+								  from loginbase.new_usuarios_ag where tb_cpf = '".$cpf."' and tb_nivel_usuario = '".$perfil."' and tb_ativado = '1'");
 		
 		$rows = mysqli_num_rows($sql);
 		if($rows > 1){			
@@ -253,16 +252,16 @@
 		$razaoSocial = strtoupper($_REQUEST['razaoSocial']);		
 		$tipo = $_REQUEST['tipo'];
 
-		$verificaPerfil = mysqli_query($con,"select * from homologacao_ag.new_usuarios_ag where tb_cnpj = '".$cnpjTrans."' and case when ('".$cnpjCli."' = '".$cnpjTrans."' and tb_nivel_usuario = '1') then tb_nivel_usuario = '2' else tb_nivel_usuario = '1' end");
+		$verificaPerfil = mysqli_query($con,"select * from loginbase.new_usuarios_ag where tb_cnpj = '".$cnpjTrans."' and case when ('".$cnpjCli."' = '".$cnpjTrans."' and tb_nivel_usuario = '1') then tb_nivel_usuario = '2' else tb_nivel_usuario = '1' end");
 		$rowsPerfil = mysqli_num_rows($verificaPerfil);
 		if($rowsPerfil == 0){
-			$sql = mysqli_query($con,"select * from homologacao_ag.cad_transp_ag where cnpj_cli = '".$cnpjCli."' and cnpj_transp = '".$cnpjTrans."'");
+			$sql = mysqli_query($con,"select * from sistemas_ag.cad_transp_ag where cnpj_cli = '".$cnpjCli."' and cnpj_transp = '".$cnpjTrans."'");
 			$rows = mysqli_num_rows($sql);
 			if($rows > 0){
 				//JÁ CADASTRADO
 				echo "2";
 			}else{
-				$insert = mysqli_query($con,"insert into homologacao_ag.cad_transp_ag
+				$insert = mysqli_query($con,"insert into sistemas_ag.cad_transp_ag
 										(cnpj_cli,cnpj_transp,razao_social,nome_cli,tipo)
 										   values
 										('".trim($cnpjCli)."','".trim($cnpjTrans)."','".strtoupper($razaoSocial)."','".strtoupper($cliente)."','".$tipo."')
@@ -295,7 +294,7 @@
 									nome_cli, 
 									permissao 
 								  from
-								    homologacao_ag.cad_transp_ag 
+								    sistemas_ag.cad_transp_ag 
 								  where cnpj_cli = '".$cnpj."'
 								  order by time_stamp desc");
 			
@@ -314,7 +313,7 @@
 		$cnpjCli = $_REQUEST['cnpjCli'];
 		$flag = $_REQUEST['flag'];
 		
-		$update = mysqli_query($con,"UPDATE `homologacao_ag`.`cad_transp_ag` SET `permissao` = '".$flag."' WHERE (`cnpj_cli` = '".$cnpjCli."') and (`cnpj_transp` = '".$cnpjTrans."')");
+		$update = mysqli_query($con,"UPDATE `sistemas_ag`.`cad_transp_ag` SET `permissao` = '".$flag."' WHERE (`cnpj_cli` = '".$cnpjCli."') and (`cnpj_transp` = '".$cnpjTrans."')");
 		
 		if($update){
 			echo "1";
@@ -328,7 +327,7 @@
 		$cnpjCli = $_REQUEST['cnpjCli'];
 		$cnpjTransp = $_REQUEST['cnpjTransp'];
 		
-		$delete = mysqli_query($con,"DELETE FROM `homologacao_ag`.`cad_transp_ag` WHERE (`cnpj_cli` = '".$cnpjCli."') and (`cnpj_transp` = '".$cnpjTransp."')");
+		$delete = mysqli_query($con,"DELETE FROM `sistemas_ag`.`cad_transp_ag` WHERE (`cnpj_cli` = '".$cnpjCli."') and (`cnpj_transp` = '".$cnpjTransp."')");
 		
 		if($delete){
 			echo "1";
@@ -344,7 +343,7 @@
 		$senha = $_REQUEST['senha'];
 		$password = md5($senha);
 		
-		$update = mysqli_query($con, "UPDATE homologacao_ag.new_usuarios_ag SET tb_senha = '".$password."', senha_decrypt = '".$senha."' WHERE  tb_cpf = '".$cpf."'");
+		$update = mysqli_query($con, "UPDATE loginbase.new_usuarios_ag SET tb_senha = '".$password."', senha_decrypt = '".$senha."' WHERE  tb_cpf = '".$cpf."'");
 		
 		if($update){
 			echo "1";
@@ -366,16 +365,16 @@
 		$destiny = array('','','');
 		
 		//Verifica se já tem cadastro com outro perfil
-		$verifyPER = mysqli_query($con,"select * from homologacao_ag.new_usuarios_ag where tb_cnpj = '".str_replace($origin,$destiny,$cnpj)."' and tb_nivel_usuario != '".$perfil."'");
+		$verifyPER = mysqli_query($con,"select * from loginbase.new_usuarios_ag where tb_cnpj = '".str_replace($origin,$destiny,$cnpj)."' and tb_nivel_usuario != '".$perfil."'");
 		
 		//Verifica se já tem cadastro 		
-		$verifyCPF = mysqli_query($con,"select * from homologacao_ag.new_usuarios_ag where tb_cnpj = '".str_replace($origin,$destiny,$cnpj)."' and tb_cpf = '".$cpf."'");
+		$verifyCPF = mysqli_query($con,"select * from loginbase.new_usuarios_ag where tb_cnpj = '".str_replace($origin,$destiny,$cnpj)."' and tb_cpf = '".$cpf."'");
 		
 		$rowsPER = mysqli_num_rows($verifyPER);
 		$rowsCPF = mysqli_num_rows($verifyCPF);
 		
 		if($rowsCPF == 0 && $rowsPER == 0){
-			$sql = "INSERT INTO homologacao_ag.new_usuarios_ag 
+			$sql = "INSERT INTO loginbase.new_usuarios_ag 
 				(
 					tb_cnpj,
 					tb_empresa,
@@ -399,7 +398,7 @@
 					senha_decrypt,
 					'0',
 					'Y'
-				FROM homologacao_ag.new_usuarios_ag 
+				FROM loginbase.new_usuarios_ag 
 				where tb_cpf = '".$cpf."' 
 				and tb_nivel_usuario = '".$perfil."'
 				on duplicate key update tb_cnpj = '".str_replace($origin,$destiny,$cnpj)."', tb_empresa = '".$empresa."',
@@ -509,7 +508,7 @@
 						$qtotal->execute();
 						$total = $qtotal->fetch();	
 						
-						$verificaUZ = mysqli_query($con,"select palete, pedido from homologacao_ag.clientes_ag where palete = '".trim($row['UZ'])."'")or die("erro no select verifica UZ");
+						$verificaUZ = mysqli_query($con,"select palete, pedido from sistemas_ag.clientes_ag where palete = '".trim($row['UZ'])."'")or die("erro no select verifica UZ");
 						$linhasUZ = mysqli_num_rows($verificaUZ);
 						$pedidoUZ = mysqli_fetch_array($verificaUZ);
 							
@@ -538,7 +537,7 @@
 																then 
 																	(sum(pedido)-sum(qtd_diff)) 
 																else 
-																	(select qtd_diff from homologacao_ag.clientes_ag where nota_fiscal = a.nota_fiscal and produto = a.produto and lote = a.lote and qtd_diff is not null order by time_stamp desc limit 1)
+																	(select qtd_diff from sistemas_ag.clientes_ag where nota_fiscal = a.nota_fiscal and produto = a.produto and lote = a.lote and qtd_diff is not null order by time_stamp desc limit 1)
 																end
 															else
 																0
@@ -557,7 +556,7 @@
 															end testando,
 															qtd_por_uz,
 															count(*) as linhas
-														from homologacao_ag.clientes_ag a 
+														from sistemas_ag.clientes_ag a 
 															where
 															nota_fiscal = '".trim($row['NOTA_FISCAL'])."' and lote_serial = '".trim($row['LOTE_SERIAL'])."' 
 															and a.produto = '".trim($row['PRODUTO'])."' and a.lote = '".trim($row['LOTE'])."' ".$clausula."
@@ -567,15 +566,15 @@
 							$acumulados = mysqli_query($con,"select 
 																sum(pedido) total,
 																count(*) cont,
-																(select qtd_diff from homologacao_ag.clientes_ag where nota_fiscal = a.nota_fiscal and produto = a.produto and lote = a.lote order by time_stamp desc limit 1) diff
-															  from homologacao_ag.clientes_ag a
+																(select qtd_diff from sistemas_ag.clientes_ag where nota_fiscal = a.nota_fiscal and produto = a.produto and lote = a.lote order by time_stamp desc limit 1) diff
+															  from sistemas_ag.clientes_ag a
 																where nota_fiscal = '".$row['NOTA_FISCAL']."'
 																and produto = '".$row['PRODUTO']."'
 																and lote = '".$row['LOTE']."'
 																and pedido != qtd_por_uz")or die("erro no select acumulados");
 							$acumulado = mysqli_fetch_array($acumulados);
 							
-							$EstoqueUZ = mysqli_query($con,"select palete from homologacao_ag.clientes_ag where nota_fiscal = '".$row['NOTA_FISCAL']."' and produto = '".$row['PRODUTO']."' and lote = '".$row['LOTE']."' and pedido = qtd_por_uz")or die("erro no select EstoqueUZ");
+							$EstoqueUZ = mysqli_query($con,"select palete from sistemas_ag.clientes_ag where nota_fiscal = '".$row['NOTA_FISCAL']."' and produto = '".$row['PRODUTO']."' and lote = '".$row['LOTE']."' and pedido = qtd_por_uz")or die("erro no select EstoqueUZ");
 																
 							$rows = mysqli_num_rows($teste);
 							if($rows > 0){
@@ -620,7 +619,7 @@
 									}
 								
 									if($estoque > 0){
-										$insert = mysqli_query($con,"insert into homologacao_ag.lista_pedidos_ag 
+										$insert = mysqli_query($con,"insert into sistemas_ag.lista_pedidos_ag 
 																 (
 																	nota_fiscal,
 																	lote_serial,
@@ -666,25 +665,7 @@
 		
 		if(isset($insert)){
 			$db_data = array();
-			
-			$verSaldoPalete = mysqli_query($con,"select 
-													case when group_concat('''',produto,'''') is null then 
-														'--' 
-													else group_concat('''',produto,'''') end produtos 
-												from homologacao_ag.clientes_ag where cnpj = '".$cnpj."' and palete = '--' and qtd_disp = pedido");
-			$resSaldoPalete = mysqli_fetch_array($verSaldoPalete);
-			
-			
-			
-			if($resSaldoPalete['produtos'] != '--'){
-				$filtro = " and produto not in (".$resSaldoPalete['produtos'].")";
-			}else{
-				$filtro = "";
-			}
-			
-			
-			
-			$myInfo = mysqli_query($con,"SELECT * FROM homologacao_ag.lista_pedidos_ag where cnpj = '".$cnpj."' $filtro and (nota_fiscal like '%$busca%' or produto like '%$busca%' or lote like '%$busca%')");
+			$myInfo = mysqli_query($con,"SELECT * FROM sistemas_ag.lista_pedidos_ag where cnpj = '".$cnpj."' and (nota_fiscal like '%$busca%' or produto like '%$busca%' or lote like '%$busca%')");
 			while($response = mysqli_fetch_array($myInfo)){
 				$db_data[] = $response;
 			}
@@ -701,10 +682,10 @@
 		$alias = str_replace(" ","",$empresa);
 		$name = substr($alias,0,6);
 	
-		$insert = mysqli_query($con,"insert into homologacao_ag.num_pedido (id,prefixo) values (1,'$name') on duplicate key update id = id + 1");
+		$insert = mysqli_query($con,"insert into sistemas_ag.num_pedido (id,prefixo) values (1,'$name') on duplicate key update id = id + 1");
 		
 		if($insert){
-			$sql = mysqli_query($con,"select id, prefixo from homologacao_ag.num_pedido where prefixo = '".$name."' order by id desc limit 1");
+			$sql = mysqli_query($con,"select id, prefixo from sistemas_ag.num_pedido where prefixo = '".$name."' order by id desc limit 1");
 			$valores = mysqli_fetch_array($sql);
 			$id = $valores['id'];
 			$prefix = $valores['prefixo'];
@@ -764,7 +745,7 @@
 		$empresa = $_REQUEST['empresa'];;
 					
 			    // tabela principal
-				$cadastrar = mysqli_query($con,"insert into `homologacao_ag`.`clientes_ag` 
+				$cadastrar = mysqli_query($con,"insert into `sistemas_ag`.`clientes_ag` 
 																(
 																	`num_pedido`,
 																	`nota_fiscal`,
@@ -816,7 +797,7 @@
 																)");
 						
                 // tabela de histórico						
-				$cadastrar2 = mysqli_query($con,"insert into `homologacao_ag`.`clientes_ag_hist` 
+				$cadastrar2 = mysqli_query($con,"insert into `sistemas_ag`.`clientes_ag_hist` 
 																(
 																	`num_pedido`,
 																	`nota_fiscal`,
@@ -868,8 +849,8 @@
 																)");
 			
 				if($cadastrar && $cadastrar2){
-					$limpar = mysqli_query($con,"delete from homologacao_ag.lista_pedidos_ag");
-					$removerDunble = mysqli_query($con,"delete a from homologacao_ag.clientes_ag a, homologacao_ag.clientes_ag b where a.counter < b.counter and a.palete = b.palete and a.nota_fiscal = '".$nota_fiscal."'");
+					$limpar = mysqli_query($con,"delete from sistemas_ag.lista_pedidos_ag");
+					$removerDunble = mysqli_query($con,"delete a from sistemas_ag.clientes_ag a, sistemas_ag.clientes_ag b where a.counter < b.counter and a.palete = b.palete and a.nota_fiscal = '".$nota_fiscal."'");
 					echo "1";
 				}else{
 					echo mysqli_error($con);
@@ -919,7 +900,7 @@
 			$teste = mysqli_query($con,"select 
 											sum(pedido) as pedidos,
 											max(qtd_composto) qtd_composto
-										from homologacao_ag.clientes_ag a 
+										from sistemas_ag.clientes_ag a 
 											where
 											 nota_fiscal = '".trim($row['NOTA_FISCAL'])."' and lote_serial = '".trim($row['LOTE_SERIAL'])."' 
 											 and a.produto = '".trim($row['PRODUTO'])."' and a.lote = '".trim($row['LOTE'])."' 
@@ -995,7 +976,7 @@
 						while ($kit = $items->fetch()) {	
 							$cont = $cont + 1;
 							
-							$guardar_item = mysqli_query($con,"insert into homologacao_ag.itens_composto (composto,itens,nota,serial,lote,qtd,unidade,id,palete,cubagem) 
+							$guardar_item = mysqli_query($con,"insert into sistemas_ag.itens_composto (composto,itens,nota,serial,lote,qtd,unidade,id,palete,cubagem) 
 																	values 
 																	('".trim($result['COMPOSTO'])."','".trim($kit['ITEM'])."','".trim($row['NOTA_FISCAL'])."','".trim($row['LOTE_SERIAL'])."','".trim($row['LOTE'])."',".trim($row['QTD']).",'".utf8_encode(trim($row['MEDIDA']))."','".$id."','--','".$cub['CUBAGEM']."')
 																	on duplicate key update nota = '".trim($row['NOTA_FISCAL'])."', serial = '".trim($row['LOTE_SERIAL'])."', qtd = ".trim($row['QTD']).", unidade = '".utf8_encode(trim($row['MEDIDA']))."', cubagem='".$cub['CUBAGEM']."'");
@@ -1003,7 +984,7 @@
 						
 						$verificaEstoque = mysqli_query($con,"select 
 																max(qtd_composto) QTD 
-															  from homologacao_ag.clientes_ag where nota_fiscal = '".trim($row['NOTA_FISCAL'])."' order by time_stamp desc limit 1")or die("erro no select verificaEstoque");
+															  from sistemas_ag.clientes_ag where nota_fiscal = '".trim($row['NOTA_FISCAL'])."' order by time_stamp desc limit 1")or die("erro no select verificaEstoque");
 						
 						$compostoEstoque = mysqli_fetch_array($verificaEstoque);						
 							
@@ -1051,7 +1032,7 @@
 									}
 									
 									//Insert de composto			
-									$insertC = mysqli_query($con,"INSERT INTO `homologacao_ag`.`lista_composto_ag` 
+									$insertC = mysqli_query($con,"INSERT INTO `sistemas_ag`.`lista_composto_ag` 
 																(
 																	`nota_fiscal`,
 																	`lote_serial`,
@@ -1092,7 +1073,7 @@
 					}
 					
 						//Insert de quantidade
-						$insertU = mysqli_query($con,"INSERT INTO `homologacao_ag`.`lista_qtd_ag` 
+						$insertU = mysqli_query($con,"INSERT INTO `sistemas_ag`.`lista_qtd_ag` 
 																(
 																	`nota_fiscal`,
 																	`lote_serial`,
@@ -1128,28 +1109,13 @@
 		
 		if(isset($insertU) || isset($insertC)){
 			$db_data = array();
-			
-			$verSaldoPalete = mysqli_query($con,"select 
-													case when GROUP_CONCAT('\'', produto, '\'') is null then '--' else GROUP_CONCAT('\'', produto, '\'') end produtos,
-													case when GROUP_CONCAT('\'', nota_fiscal, '\'') is null then '--' else GROUP_CONCAT('\'', nota_fiscal, '\'') end notas
-												  from homologacao_ag.clientes_ag where cnpj = '".$cnpj."' and (palete <> '--' or troca = 'V')");
-			$resSaldoPalete = mysqli_fetch_array($verSaldoPalete);
-			
-			if($resSaldoPalete['produtos'] != '--' || $resSaldoPalete['notas'] != '--'){
-				$filtro = " and produto not in (".$resSaldoPalete['produtos'].") ";
-			}else{
-				$filtro = "";
-			}
-				
-				$myInfo = mysqli_query($con,"select * from homologacao_ag.lista_qtd_ag
-													   where cnpj = '".$cnpj."'
-													   $filtro
+			$myInfo = mysqli_query($con,"select * from sistemas_ag.lista_qtd_ag
+													   where cnpj = '".$cnpj."' 
 													   and (nota_fiscal like '%$busca%' or produto like '%$busca%' or lote like '%$busca%')
 													union all
-										 select * from homologacao_ag.lista_composto_ag
+										 select * from sistemas_ag.lista_composto_ag
 													   where cnpj = '".$cnpj."' 
 													   and (nota_fiscal like '%$busca%' or composto like '%$busca%' or lote like '%$busca%')");
-			
 			
 			while($response = mysqli_fetch_array($myInfo)){
 				$db_data[] = $response;
@@ -1212,7 +1178,7 @@
 					$i = $i + 1;
 					
 					//Verifico se já foi feito um pedido composto para mesma nota e produto
-					$busca_qtdComp = mysqli_query($con,"select max(qtd_composto) QTD from homologacao_ag.clientes_ag where nota_fiscal = '$nota_fiscal' and produto = '".$kit['ITEM']."' group by nota_fiscal")or die("erro no busca_qtdComp");
+					$busca_qtdComp = mysqli_query($con,"select max(qtd_composto) QTD from sistemas_ag.clientes_ag where nota_fiscal = '$nota_fiscal' and produto = '".$kit['ITEM']."' group by nota_fiscal")or die("erro no busca_qtdComp");
 					$rows_qtdComp = mysqli_num_rows($busca_qtdComp);
 										
 					$loteAdd = $conAG->query("select q.trenn_1 LOTE from quanten q where q.nr_lieferschein = '".$nota_fiscal."' and q.id_artikel = '".$kit['ITEM']."'");
@@ -1234,17 +1200,17 @@
 					
 					//Vou coletar as quantidades pedidas e acumuladas dos itens compostos
 					$coletaQTD = mysqli_query($con,"INSERT INTO
-										`homologacao_ag`.`qtd_composto`(num_pedido,nota_fiscal,qtd_pedida,qtd_acumulada) VALUES ('$num_pedido','".$nota_fiscal."',".$qtd_real.",".$result_qtdComp.") 
+										`sistemas_ag`.`qtd_composto`(num_pedido,nota_fiscal,qtd_pedida,qtd_acumulada) VALUES ('$num_pedido','".$nota_fiscal."',".$qtd_real.",".$result_qtdComp.") 
 										")or die("erro no insert coletaQTD");
 										
 					//Vai inserir as informações do pedido feito no banco da tabela de histórico
-					$insert = mysqli_query($con,"insert into homologacao_ag.clientes_ag_hist (num_pedido,nota_fiscal,lote_serial,produto,qtd_disp,lote,unid_medida,pedido,nome_cli,cnpj,endereco,numero,bairro,cep_cli,cidade,cod_id,tel_cli,email_cli,palete,cubagem,auth,qtd_diff,qtd_composto,forma)
+					$insert = mysqli_query($con,"insert into sistemas_ag.clientes_ag_hist (num_pedido,nota_fiscal,lote_serial,produto,qtd_disp,lote,unid_medida,pedido,nome_cli,cnpj,endereco,numero,bairro,cep_cli,cidade,cod_id,tel_cli,email_cli,palete,cubagem,auth,qtd_diff,qtd_composto,forma)
 					values
 					('$num_pedido','$nota_fiscal','$lote_serial','".$kit['ITEM']."','$qtd_total','".$loteComp['LOTE']."','$unidade','$qtd_real','$empresa','$cnpj','$end_cli','$numero_cli','$bairro_cli','$cep_cli','$cidade_cli','$client_id','$tel_cli','$email_cli','--','$cubagem','$auth','$qtd_real','$result_qtdComp','$forma') ON DUPLICATE KEY UPDATE pedido = pedido + '$qtd_real', qtd_disp = qtd_disp");		
 
 						
 					//Vai inserir as informações do pedido feito no banco
-					$insert = mysqli_query($con,"insert into homologacao_ag.clientes_ag (num_pedido,nota_fiscal,lote_serial,produto,qtd_disp,lote,unid_medida,pedido,nome_cli,cnpj,endereco,numero,bairro,cep_cli,cidade,cod_id,tel_cli,email_cli,palete,cubagem,auth,qtd_diff,qtd_composto,forma)
+					$insert = mysqli_query($con,"insert into sistemas_ag.clientes_ag (num_pedido,nota_fiscal,lote_serial,produto,qtd_disp,lote,unid_medida,pedido,nome_cli,cnpj,endereco,numero,bairro,cep_cli,cidade,cod_id,tel_cli,email_cli,palete,cubagem,auth,qtd_diff,qtd_composto,forma)
 					values
 					('$num_pedido','$nota_fiscal','$lote_serial','".$kit['ITEM']."','$qtd_total','".$loteComp['LOTE']."','$unidade','$qtd_real','$empresa','$cnpj','$end_cli','$numero_cli','$bairro_cli','$cep_cli','$cidade_cli','$client_id','$tel_cli','$email_cli','--','$cubagem','$auth','$qtd_real','$result_qtdComp','$forma') ON DUPLICATE KEY UPDATE pedido = pedido + '$qtd_real', qtd_disp = qtd_disp");
 										
@@ -1253,21 +1219,21 @@
 				$result_qtdComp = 0;
 				
 				//Vai inserir as informações do pedido feito no banco da tabela de histórico
-				$insert = mysqli_query($con,"insert into homologacao_ag.clientes_ag_hist (num_pedido,nota_fiscal,lote_serial,produto,qtd_disp,lote,unid_medida,pedido,nome_cli,cnpj,endereco,numero,bairro,cep_cli,cidade,cod_id,tel_cli,email_cli,palete,cubagem,auth,qtd_diff,qtd_composto,forma)
+				$insert = mysqli_query($con,"insert into sistemas_ag.clientes_ag_hist (num_pedido,nota_fiscal,lote_serial,produto,qtd_disp,lote,unid_medida,pedido,nome_cli,cnpj,endereco,numero,bairro,cep_cli,cidade,cod_id,tel_cli,email_cli,palete,cubagem,auth,qtd_diff,qtd_composto,forma)
 				values
 				('$num_pedido','$nota_fiscal','$lote_serial','$produto','$qtd_total','$lote','$unidade','$pedido','$empresa','$cnpj','$end_cli','$numero_cli','$bairro_cli','$cep_cli','$cidade_cli','$client_id','$tel_cli','$email_cli','--','$cubagem','$auth','$pedido','$result_qtdComp','$forma') ON DUPLICATE KEY UPDATE pedido = pedido + '$pedido', qtd_disp = qtd_disp");		
 
 					
 				//Vai inserir as informações do pedido feito no banco
-				$insert = mysqli_query($con,"insert into homologacao_ag.clientes_ag (num_pedido,nota_fiscal,lote_serial,produto,qtd_disp,lote,unid_medida,pedido,nome_cli,cnpj,endereco,numero,bairro,cep_cli,cidade,cod_id,tel_cli,email_cli,palete,cubagem,auth,qtd_diff,qtd_composto,forma)
+				$insert = mysqli_query($con,"insert into sistemas_ag.clientes_ag (num_pedido,nota_fiscal,lote_serial,produto,qtd_disp,lote,unid_medida,pedido,nome_cli,cnpj,endereco,numero,bairro,cep_cli,cidade,cod_id,tel_cli,email_cli,palete,cubagem,auth,qtd_diff,qtd_composto,forma)
 				values
 				('$num_pedido','$nota_fiscal','$lote_serial','$produto','$qtd_total','$lote','$unidade','$pedido','$empresa','$cnpj','$end_cli','$numero_cli','$bairro_cli','$cep_cli','$cidade_cli','$client_id','$tel_cli','$email_cli','--','$cubagem','$auth','$pedido','$result_qtdComp','$forma') ON DUPLICATE KEY UPDATE pedido = pedido + '$pedido', qtd_disp = qtd_disp");	
 			}
 				
 			//Verifica se a inserção foi feita com sucesso
 			if($insert){
-				$limpar1 = mysqli_query($con,"delete from homologacao_ag.lista_composto_ag");
-				$limpar2 = mysqli_query($con,"delete from homologacao_ag.lista_qtd_ag");
+				$limpar1 = mysqli_query($con,"delete from sistemas_ag.lista_composto_ag");
+				$limpar2 = mysqli_query($con,"delete from sistemas_ag.lista_qtd_ag");
 				echo "1";
 			}else{
 				echo "0";
@@ -1298,7 +1264,7 @@
 		$db_data = array();
 		$sql = mysqli_query($con,"select 
 									 datas
-								  from (select data datas, count(*) total_horas from homologacao_ag.data_block  group by data) as tb1 where total_horas = 6")or die(mysqli_error($con));
+								  from (select data datas, count(*) total_horas from sistemas_ag.data_block  group by data) as tb1 where total_horas = 6")or die(mysqli_error($con));
 		while($result = mysqli_fetch_array($sql)){
 			$db_data[] = $result;
 		}
@@ -1310,7 +1276,7 @@
 		$day = $_REQUEST['day'];
 		
 		$db_data = array();
-		$sql = mysqli_query($con,"select hora horas from homologacao_ag.data_block where data = '".$day."' order by length(hora), hora asc")or die(mysqli_error($con));
+		$sql = mysqli_query($con,"select hora horas from sistemas_ag.data_block where data = '".$day."' order by length(hora), hora asc")or die(mysqli_error($con));
 		while($result = mysqli_fetch_array($sql)){
 			$db_data[] = $result;
 		}
@@ -1326,11 +1292,11 @@
 								  	nota_fiscal,
 									produto,
 									lote,
-									case when qtd_disp < 0 then 0 else qtd_disp end qtd_disp,
+									qtd_disp,
 									pedido,
 									cubagem,
 									palete
-								  from homologacao_ag.lista_gerado where num_pedido = '".$num_pedido."' 
+								  from sistemas_ag.lista_gerado where num_pedido = '".$num_pedido."' 
 								  group by lote,nota_fiscal,produto");
 								  
 		while($result = mysqli_fetch_array($sql)){
@@ -1371,21 +1337,21 @@
 				$returnCUB = $pesqCUB->fetch();
 				$valCubagem = ((float)$returnCUB['CUBAGEM'] * (float)$qtdEditada);	
 
-				$editar = mysqli_query($con,"UPDATE `homologacao_ag`.`clientes_ag` SET `pedido`= '".$qtdEditada."', palete = '--', troca='V', cubagem='".round($valCubagem,3)."'  WHERE `num_pedido`='".$num_pedido."' and nota_fiscal = '".$nota_fiscal."' and produto = '".$returnQTD['ITEM']."' and lote = '".$returnQTD['LOTE']."'")or die("erro no update de edicao 1");
+				$editar = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag` SET `pedido`= '".$qtdEditada."', palete = '--', troca='V', cubagem='".round($valCubagem,3)."'  WHERE `num_pedido`='".$num_pedido."' and nota_fiscal = '".$nota_fiscal."' and produto = '".$returnQTD['ITEM']."' and lote = '".$returnQTD['LOTE']."'")or die("erro no update de edicao 1");
 				
-				$editar2 = mysqli_query($con,"UPDATE `homologacao_ag`.`clientes_ag_hist` SET `pedido`= '".$qtdEditada."', `palete` = '--', `troca`='V', `cubagem`='".$valCubagem."' WHERE `num_pedido`='".$num_pedido."' and nota_fiscal = '".$nota_fiscal."' and produto = '".$returnQTD['ITEM']."' and lote = '".$returnQTD['LOTE']."'")or die("erro no update de edicao 3");
+				$editar2 = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag_hist` SET `pedido`= '".$qtdEditada."', `palete` = '--', `troca`='V', `cubagem`='".$valCubagem."' WHERE `num_pedido`='".$num_pedido."' and nota_fiscal = '".$nota_fiscal."' and produto = '".$returnQTD['ITEM']."' and lote = '".$returnQTD['LOTE']."'")or die("erro no update de edicao 3");
 			}
 			
 			//Verifica se no pedido tem item composto
-			$buscaNF = mysqli_query($con,"select nota_fiscal NF from homologacao_ag.qtd_composto where num_pedido = '".$num_pedido."' group by nota_fiscal")or die("erro do sqlQtdRest");
+			$buscaNF = mysqli_query($con,"select nota_fiscal NF from sistemas_ag.qtd_composto where num_pedido = '".$num_pedido."' group by nota_fiscal")or die("erro do sqlQtdRest");
 			$rowsNF = mysqli_num_rows($buscaNF);
 			
 			if($rowsNF > 0){
 				//Verifico se já foi feito um pedido composto para mesma nota e produto
 				$busca_qtdComp = mysqli_query($con,"select 
 													count(distinct num_pedido) pedidos
-												from homologacao_ag.clientes_ag where nota_fiscal = '".$nota_fiscal."' and qtd_composto <= (
-													select qtd_composto from (select max(qtd_composto) qtd_composto from homologacao_ag.clientes_ag) as tb1)")or die("erro no busca_qtdComp");
+												from sistemas_ag.clientes_ag where nota_fiscal = '".$nota_fiscal."' and qtd_composto <= (
+													select qtd_composto from (select max(qtd_composto) qtd_composto from sistemas_ag.clientes_ag) as tb1)")or die("erro no busca_qtdComp");
 													
 				$resultComposto = mysqli_fetch_array($busca_qtdComp);
 				
@@ -1403,18 +1369,18 @@
 											(SELECT 
 												qtd_pedida qtd_pedida, 
 												qtd_acumulada qtd_acumulada
-											FROM homologacao_ag.qtd_composto a
+											FROM sistemas_ag.qtd_composto a
 											where a.num_pedido = '".$num_pedido."'
 											 and a.nota_fiscal = '".$nf_fiscal."'
 											 group by a.num_pedido) as tb1,
 											 (select 
 												max(qtd_composto) maximo
-											from homologacao_ag.clientes_ag
+											from sistemas_ag.clientes_ag
 												where nota_fiscal = '".$nf_fiscal."'
 											) as tb2,
 											(select 
 														 qtd_pedida soma
-												  from homologacao_ag.qtd_composto
+												  from sistemas_ag.qtd_composto
 												  where nota_fiscal = '".$nf_fiscal."' group by num_pedido) as tb3")or die("erro no select sqlQTD");
 					
 					$resultQTD = mysqli_fetch_array($sqlQTD);						
@@ -1428,22 +1394,22 @@
 						}
 						
 						if($resultComposto['pedidos'] == 1){
-							$editar3 = mysqli_query($con,"UPDATE homologacao_ag.clientes_ag SET `qtd_composto`= $qtd_nova, `time_stamp` = now() WHERE `nota_fiscal`= '".$nf_fiscal."' AND qtd_composto = (SELECT 
-							qtd_composto FROM (SELECT MAX(qtd_composto) qtd_composto FROM homologacao_ag.clientes_ag
+							$editar3 = mysqli_query($con,"UPDATE sistemas_ag.clientes_ag SET `qtd_composto`= $qtd_nova, `time_stamp` = now() WHERE `nota_fiscal`= '".$nf_fiscal."' AND qtd_composto = (SELECT 
+							qtd_composto FROM (SELECT MAX(qtd_composto) qtd_composto FROM sistemas_ag.clientes_ag
 							WHERE nota_fiscal = '".$nf_fiscal."') AS tb1)")or die("erro no update de edicao 2 base 1");
 							
-							$editar4 = mysqli_query($con,"UPDATE homologacao_ag.clientes_ag_hist SET `qtd_composto`= $qtd_nova, `time_stamp` = now() WHERE `nota_fiscal`= '".$nf_fiscal."' AND qtd_composto = (SELECT 
-							qtd_composto FROM (SELECT MAX(qtd_composto) qtd_composto FROM homologacao_ag.clientes_ag_hist
+							$editar4 = mysqli_query($con,"UPDATE sistemas_ag.clientes_ag_hist SET `qtd_composto`= $qtd_nova, `time_stamp` = now() WHERE `nota_fiscal`= '".$nf_fiscal."' AND qtd_composto = (SELECT 
+							qtd_composto FROM (SELECT MAX(qtd_composto) qtd_composto FROM sistemas_ag.clientes_ag_hist
 							WHERE nota_fiscal = '".$nf_fiscal."') AS tb1)")or die("erro no update de edicao 2 hist 1");
 						}else{	
-							$editar3 = mysqli_query($con,"UPDATE `homologacao_ag`.`clientes_ag` SET `qtd_composto` = ".$valorAtual.", `time_stamp` = now(), `qtd_disp`= '$sobraQTD' WHERE (`nota_fiscal` = '".$nota_fiscal."') and qtd_composto = (select qtd_composto from (select max(qtd_composto) qtd_composto from homologacao_ag.clientes_ag where nota_fiscal = '".$nf_fiscal."') as tb1)")or die("erro no update de edicao 2 base 2");
+							$editar3 = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag` SET `qtd_composto` = ".$valorAtual.", `time_stamp` = now(), `qtd_disp`= '$sobraQTD' WHERE (`nota_fiscal` = '".$nota_fiscal."') and qtd_composto = (select qtd_composto from (select max(qtd_composto) qtd_composto from sistemas_ag.clientes_ag where nota_fiscal = '".$nf_fiscal."') as tb1)")or die("erro no update de edicao 2 base 2");
 							
-							$editar4 = mysqli_query($con,"UPDATE homologacao_ag.clientes_ag_hist SET `qtd_composto`=  ".$valorAtual.", `time_stamp` = now(), `qtd_disp`= '$sobraQTD' WHERE `nota_fiscal`= '".$nf_fiscal."' AND qtd_composto = (SELECT qtd_composto FROM (SELECT MAX(qtd_composto) qtd_composto FROM homologacao_ag.clientes_ag_hist
+							$editar4 = mysqli_query($con,"UPDATE sistemas_ag.clientes_ag_hist SET `qtd_composto`=  ".$valorAtual.", `time_stamp` = now(), `qtd_disp`= '$sobraQTD' WHERE `nota_fiscal`= '".$nf_fiscal."' AND qtd_composto = (SELECT qtd_composto FROM (SELECT MAX(qtd_composto) qtd_composto FROM sistemas_ag.clientes_ag_hist
 							WHERE nota_fiscal = '".$nf_fiscal."') AS tb1)")or die("erro no update de edicao 2 hist 2");
 						}
 									
 						if($editar3 && $editar4){
-							$editarQtdComposto = mysqli_query($con,"UPDATE `homologacao_ag`.`qtd_composto` SET `qtd_acumulada` = ".$valorAtual.", qtd_pedida = '".$qtd_nova."' WHERE `num_pedido` = '".$num_pedido."' and nota_fiscal = '".$nota_fiscal."'")or die("erro no update editarQtdComposto");
+							$editarQtdComposto = mysqli_query($con,"UPDATE `sistemas_ag`.`qtd_composto` SET `qtd_acumulada` = ".$valorAtual.", qtd_pedida = '".$qtd_nova."' WHERE `num_pedido` = '".$num_pedido."' and nota_fiscal = '".$nota_fiscal."'")or die("erro no update editarQtdComposto");
 						}
 					}
 				}
@@ -1460,35 +1426,35 @@
 			}
 		}
 		
-		$consult = mysqli_query($con,"select count(*) cont, troca from homologacao_ag.clientes_ag where num_pedido = '".$num_pedido."' and nota_fiscal = '".$nota_fiscal."' and produto = '".$produto."' and lote = '".$lote."'  group by num_pedido,nota_fiscal,lote,produto")or die("erro no select consult");
+		$consult = mysqli_query($con,"select count(*) cont, troca from sistemas_ag.clientes_ag where num_pedido = '".$num_pedido."' and nota_fiscal = '".$nota_fiscal."' and produto = '".$produto."' and lote = '".$lote."'  group by num_pedido,nota_fiscal,lote,produto")or die("erro no select consult");
 		$resp = mysqli_fetch_array($consult);
 		
 		if($resp['cont'] > 1){
-			$timer1 = mysqli_query($con,"UPDATE `homologacao_ag`.`clientes_ag` SET `time_stamp`=now(), troca='V' WHERE `num_pedido`='".$num_pedido."' and palete='".$palete."'")or die("erro no update de timer1");
-			$timer2 = mysqli_query($con,"UPDATE `homologacao_ag`.`clientes_ag_hist` SET `time_stamp`=now(), troca='V' WHERE `num_pedido`='".$num_pedido."' and palete='".$palete."'")or die("erro no update de timer2");
+			$timer1 = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag` SET `time_stamp`=now(), troca='V' WHERE `num_pedido`='".$num_pedido."' and palete='".$palete."'")or die("erro no update de timer1");
+			$timer2 = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag_hist` SET `time_stamp`=now(), troca='V' WHERE `num_pedido`='".$num_pedido."' and palete='".$palete."'")or die("erro no update de timer2");
 			
 			if($resp['troca'] == "V"){
-				$limpar1 = mysqli_query($con,"delete a from homologacao_ag.clientes_ag a, homologacao_ag.clientes_ag b where a.num_pedido = '".$num_pedido."' and a.num_pedido = b.num_pedido and a.counter < b.counter and a.nota_fiscal = b.nota_fiscal and a.produto = b.produto and a.lote = b.lote")or die("erro no delete limpar1");
-				$limpar2 = mysqli_query($con,"delete a from homologacao_ag.clientes_ag_hist  a, homologacao_ag.clientes_ag_hist b where a.num_pedido = '".$num_pedido."' and a.num_pedido = b.num_pedido and a.counter < b.counter and a.nota_fiscal = b.nota_fiscal and a.produto = b.produto and a.lote = b.lote")or die("erro no delete limpar2");
+				$limpar1 = mysqli_query($con,"delete a from sistemas_ag.clientes_ag a, sistemas_ag.clientes_ag b where a.num_pedido = '".$num_pedido."' and a.num_pedido = b.num_pedido and a.counter < b.counter and a.nota_fiscal = b.nota_fiscal and a.produto = b.produto and a.lote = b.lote")or die("erro no delete limpar1");
+				$limpar2 = mysqli_query($con,"delete a from sistemas_ag.clientes_ag_hist  a, sistemas_ag.clientes_ag_hist b where a.num_pedido = '".$num_pedido."' and a.num_pedido = b.num_pedido and a.counter < b.counter and a.nota_fiscal = b.nota_fiscal and a.produto = b.produto and a.lote = b.lote")or die("erro no delete limpar2");
 			}else{	
-				$limpar1 = mysqli_query($con,"delete a from homologacao_ag.clientes_ag a, homologacao_ag.clientes_ag b where a.num_pedido = '".$num_pedido."' and a.num_pedido = b.num_pedido and a.counter < b.counter and a.nota_fiscal = b.nota_fiscal and a.produto = b.produto and a.lote = b.lote")or die("erro no delete limpar1");
-				$limpar2 = mysqli_query($con,"delete a from homologacao_ag.clientes_ag_hist a, homologacao_ag.clientes_ag_hist b where a.num_pedido = '".$num_pedido."' and a.num_pedido = b.num_pedido and a.counter < b.counter and a.nota_fiscal = b.nota_fiscal and a.produto = b.produto and a.lote = b.lote")or die("erro no delete limpar2");
+				$limpar1 = mysqli_query($con,"delete a from sistemas_ag.clientes_ag a, sistemas_ag.clientes_ag b where a.num_pedido = '".$num_pedido."' and a.num_pedido = b.num_pedido and a.counter < b.counter and a.nota_fiscal = b.nota_fiscal and a.produto = b.produto and a.lote = b.lote")or die("erro no delete limpar1");
+				$limpar2 = mysqli_query($con,"delete a from sistemas_ag.clientes_ag_hist a, sistemas_ag.clientes_ag_hist b where a.num_pedido = '".$num_pedido."' and a.num_pedido = b.num_pedido and a.counter < b.counter and a.nota_fiscal = b.nota_fiscal and a.produto = b.produto and a.lote = b.lote")or die("erro no delete limpar2");
 			}	
 		}else{
-			$timer1 = mysqli_query($con,"UPDATE `homologacao_ag`.`clientes_ag` SET `time_stamp`=now() WHERE `num_pedido`='".$num_pedido."'")or die("erro no update de timer1");
+			$timer1 = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag` SET `time_stamp`=now() WHERE `num_pedido`='".$num_pedido."'")or die("erro no update de timer1");
 		}
 		
 		if($pos){
 			
 		}else{
-			$editar = mysqli_query($con,"UPDATE `homologacao_ag`.`clientes_ag` SET `pedido`= '".$qtdEditada."', palete = '--', troca='V', cubagem='".$cub."' WHERE `num_pedido`='".$num_pedido."' and nota_fiscal = '".$nota_fiscal."' and produto = '".$produto."' and lote = '".$lote."'")or die("erro no update de edicao");
+			$editar = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag` SET `pedido`= '".$qtdEditada."', palete = '--', troca='V', cubagem='".$cub."' WHERE `num_pedido`='".$num_pedido."' and nota_fiscal = '".$nota_fiscal."' and produto = '".$produto."' and lote = '".$lote."'")or die("erro no update de edicao");
 		
 		
-			$editar2 = mysqli_query($con,"UPDATE `homologacao_ag`.`clientes_ag_hist` SET `pedido`= '".$qtdEditada."', palete = '--', troca='V', cubagem='".$cub."', qtd_composto='".$qtd_nova."' WHERE `num_pedido`='".$num_pedido."' and nota_fiscal = '".$nota_fiscal."' and produto = '".$produto."' and lote = '".$lote."'")or die("erro no update de edicao");
+			$editar2 = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag_hist` SET `pedido`= '".$qtdEditada."', palete = '--', troca='V', cubagem='".$cub."', qtd_composto='".$qtd_nova."' WHERE `num_pedido`='".$num_pedido."' and nota_fiscal = '".$nota_fiscal."' and produto = '".$produto."' and lote = '".$lote."'")or die("erro no update de edicao");
 		}
 		
 		if($editar && $editar2){
-			$limpar = mysqli_query($con,"DELETE FROM `homologacao_ag`.`lista_gerado`");
+			$limpar = mysqli_query($con,"DELETE FROM `sistemas_ag`.`lista_gerado`");
 			echo "1";
 		}else{
 			echo "0";
@@ -1498,7 +1464,7 @@
 	//Aqui eu limpo a lista de itens
     if($action == "limparLista"){
 		
-		$limpar = mysqli_query($con,"DELETE FROM `homologacao_ag`.`lista_gerado`");
+		$limpar = mysqli_query($con,"DELETE FROM `sistemas_ag`.`lista_gerado`");
 		if($limpar){
 			echo "1";
 		}else{
@@ -1511,7 +1477,7 @@
 		$pedido = $_REQUEST['num_pedido'];
 		
 		//Verifica se no pedido tem item composto
-		$buscaNF = mysqli_query($con,"select nota_fiscal NF from homologacao_ag.qtd_composto where num_pedido = '".$pedido."' group by nota_fiscal")or die("erro do sqlQtdRest");
+		$buscaNF = mysqli_query($con,"select nota_fiscal NF from sistemas_ag.qtd_composto where num_pedido = '".$pedido."' group by nota_fiscal")or die("erro do sqlQtdRest");
 
 		$rowsNF = mysqli_num_rows($buscaNF);
 			
@@ -1531,75 +1497,75 @@
 											(SELECT 
 												qtd_pedida qtd_pedida, 
 												qtd_acumulada qtd_acumulada
-											FROM homologacao_ag.qtd_composto a
+											FROM sistemas_ag.qtd_composto a
 											where a.num_pedido = '".$pedido."'
 											 group by a.num_pedido) as tb1,
 											 (select 
 												max(qtd_composto) maximo
-											from homologacao_ag.clientes_ag
+											from sistemas_ag.clientes_ag
 												where nota_fiscal = '".$nf_fiscal2."'
 											) as tb2,
 											(select 
 												qtd_pedida soma
-											from homologacao_ag.qtd_composto
+											from sistemas_ag.qtd_composto
 											where nota_fiscal = '".$nf_fiscal2."' group by num_pedido) as tb3")or die("erro no select sqlQTD");
 											
 					$rowsQTD = mysqli_num_rows($sqlQTD);					
 										
 					if($rowsQTD > 0){
 						
-						$remover = mysqli_query($con,"DELETE FROM `homologacao_ag`.`clientes_ag` WHERE `num_pedido` = '".$pedido."' and nota_fiscal = '".$nf_fiscal2."'")or die("erro no delete remover pedido do cliente ag");
+						$remover = mysqli_query($con,"DELETE FROM `sistemas_ag`.`clientes_ag` WHERE `num_pedido` = '".$pedido."' and nota_fiscal = '".$nf_fiscal2."'")or die("erro no delete remover pedido do cliente ag");
 							
 						$resultQTD = mysqli_fetch_array($sqlQTD);
 						$valorAtual =  ((int)$resultQTD['total'] - (int)$resultQTD['qtd_pedida']);	
 								
-						$atuaQTD = mysqli_query($con,"UPDATE `homologacao_ag`.`clientes_ag` SET `qtd_composto` = ".$valorAtual." WHERE (`nota_fiscal` = '".$nf_fiscal2."') and qtd_composto <= (select qtd_composto from (select max(qtd_composto) qtd_composto from homologacao_ag.clientes_ag where nota_fiscal = '".$nf_fiscal2."') as tb1)")or die("erro no update atuaQTD");
+						$atuaQTD = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag` SET `qtd_composto` = ".$valorAtual." WHERE (`nota_fiscal` = '".$nf_fiscal2."') and qtd_composto <= (select qtd_composto from (select max(qtd_composto) qtd_composto from sistemas_ag.clientes_ag where nota_fiscal = '".$nf_fiscal2."') as tb1)")or die("erro no update atuaQTD");
 								
-						$atuaQTD2 = mysqli_query($con,"UPDATE `homologacao_ag`.`clientes_ag_hist` SET `qtd_composto` = ".$valorAtual." WHERE (`nota_fiscal` = '".$nf_fiscal2."') and qtd_composto <= (select qtd_composto from (select max(qtd_composto) qtd_composto from homologacao_ag.clientes_ag_hist where nota_fiscal = '".$nf_fiscal2."') as tb1)")or die("erro no update atuaQTD");
+						$atuaQTD2 = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag_hist` SET `qtd_composto` = ".$valorAtual." WHERE (`nota_fiscal` = '".$nf_fiscal2."') and qtd_composto <= (select qtd_composto from (select max(qtd_composto) qtd_composto from sistemas_ag.clientes_ag_hist where nota_fiscal = '".$nf_fiscal2."') as tb1)")or die("erro no update atuaQTD");
 								
 						if($atuaQTD && $atuaQTD2){
-							$removerQtdComposto = mysqli_query($con,"DELETE FROM `homologacao_ag`.`qtd_composto` WHERE `num_pedido` = '".$pedido."' and nota_fiscal = '".$nf_fiscal2."'")or die("erro no delete remover qtd composta");
+							$removerQtdComposto = mysqli_query($con,"DELETE FROM `sistemas_ag`.`qtd_composto` WHERE `num_pedido` = '".$pedido."' and nota_fiscal = '".$nf_fiscal2."'")or die("erro no delete remover qtd composta");
 						}
 					}
 				}
 			}
 		
-		$remover = mysqli_query($con,"DELETE FROM `homologacao_ag`.`clientes_ag` WHERE `num_pedido` = '".$pedido."'")or die("erro no delete remover pedido do cliente ag");
+		$remover = mysqli_query($con,"DELETE FROM `sistemas_ag`.`clientes_ag` WHERE `num_pedido` = '".$pedido."'")or die("erro no delete remover pedido do cliente ag");
 
-		$removerQtdComposto = mysqli_query($con,"DELETE FROM `homologacao_ag`.`qtd_composto` WHERE `num_pedido` = '".$pedido."'")or die("erro no delete remover qtd composta");
+		$removerQtdComposto = mysqli_query($con,"DELETE FROM `sistemas_ag`.`qtd_composto` WHERE `num_pedido` = '".$pedido."'")or die("erro no delete remover qtd composta");
 										
-		$removerAgenda = mysqli_query($con,"DELETE FROM `homologacao_ag`.`agendamento_ag` WHERE `num_pedido` = '".$pedido."'")or die("erro no delete agenda ag remover");
+		$removerAgenda = mysqli_query($con,"DELETE FROM `sistemas_ag`.`agendamento_ag` WHERE `num_pedido` = '".$pedido."'")or die("erro no delete agenda ag remover");
 		
-		$removerAgendaHist = mysqli_query($con,"DELETE FROM `homologacao_ag`.`agendamento_hist` WHERE `num_pedido` = '".$pedido."'")or die("erro no delete agenda hist remover");
+		$removerAgendaHist = mysqli_query($con,"DELETE FROM `sistemas_ag`.`agendamento_hist` WHERE `num_pedido` = '".$pedido."'")or die("erro no delete agenda hist remover");
 		
-		$removerColeta = mysqli_query($con,"DELETE FROM `homologacao_ag`.`coleta_ag` WHERE `num_pedido` = '".$pedido."'")or die("erro no delete coleta ag remover");
+		$removerColeta = mysqli_query($con,"DELETE FROM `sistemas_ag`.`coleta_ag` WHERE `num_pedido` = '".$pedido."'")or die("erro no delete coleta ag remover");
 		
-		$removerColetaHist = mysqli_query($con,"DELETE FROM `homologacao_ag`.`coleta_ag_hist` WHERE `num_pedido` = '".$pedido."'")or die("erro no delete coleta hist remover");
+		$removerColetaHist = mysqli_query($con,"DELETE FROM `sistemas_ag`.`coleta_ag_hist` WHERE `num_pedido` = '".$pedido."'")or die("erro no delete coleta hist remover");
 		
-		$removerColetaStatus = mysqli_query($con,"DELETE FROM `homologacao_ag`.`coleta_status` WHERE `num_pedido` = '".$pedido."'")or die("erro no delete coleta status remover");
+		$removerColetaStatus = mysqli_query($con,"DELETE FROM `sistemas_ag`.`coleta_status` WHERE `num_pedido` = '".$pedido."'")or die("erro no delete coleta status remover");
 			
-		$removerOrdem = mysqli_query($con,"DELETE FROM `homologacao_ag`.`coleta_status` WHERE `num_pedido` = '".$pedido."'")or die("erro no delete ordem coleta remover");
+		$removerOrdem = mysqli_query($con,"DELETE FROM `sistemas_ag`.`coleta_status` WHERE `num_pedido` = '".$pedido."'")or die("erro no delete ordem coleta remover");
 		
-		$verificaVeiculo = mysqli_query($con,"SELECT num_pedido, tipo FROM `homologacao_ag`.`veiculos_ag` where (id_veiculo = '".$pedido."' or num_pedido = '".$pedido."')")or die("erro no select verificar veiculo");
+		$verificaVeiculo = mysqli_query($con,"SELECT num_pedido, tipo FROM `sistemas_ag`.`veiculos_ag` where (id_veiculo = '".$pedido."' or num_pedido = '".$pedido."')")or die("erro no select verificar veiculo");
 		$qtdVeiculos = mysqli_num_rows($verificaVeiculo);
 		if($qtdVeiculos === 0){
-			$removerHist = mysqli_query($con,"DELETE FROM `homologacao_ag`.`clientes_ag_hist` WHERE `num_pedido` = '".$pedido."'")or die("erro no delete remover hist 1");
+			$removerHist = mysqli_query($con,"DELETE FROM `sistemas_ag`.`clientes_ag_hist` WHERE `num_pedido` = '".$pedido."'")or die("erro no delete remover hist 1");
 		}else{
 			$codVeiculo = mysqli_fetch_array($verificaVeiculo);
 			$id_veiculo = $codVeiculo['num_pedido'];
 			$tp_veiculo = $codVeiculo['tipo'];
-			$removerHist = mysqli_query($con,"DELETE FROM `homologacao_ag`.`clientes_ag_hist` WHERE `num_pedido` = '".$id_veiculo."'")or die("erro no delete remover hist 2");
+			$removerHist = mysqli_query($con,"DELETE FROM `sistemas_ag`.`clientes_ag_hist` WHERE `num_pedido` = '".$id_veiculo."'")or die("erro no delete remover hist 2");
 			
 			if($tp_veiculo === "PED"){
-				$removerCodUnit = mysqli_query($con,"DELETE FROM `homologacao_ag`.`codigo_unico` WHERE codigo = '".substr($pedido,8)."'")or die("erro no select removerCodUnit");
+				$removerCodUnit = mysqli_query($con,"DELETE FROM `sistemas_ag`.`codigo_unico` WHERE codigo = '".substr($pedido,8)."'")or die("erro no select removerCodUnit");
 			}
 		}
 		
-		$removerVeiculo = mysqli_query($con,"DELETE FROM `homologacao_ag`.`veiculos_ag` WHERE (id_veiculo = '".$pedido."' or num_pedido = '".$pedido."')")or die("erro no delete remover veiculo");
+		$removerVeiculo = mysqli_query($con,"DELETE FROM `sistemas_ag`.`veiculos_ag` WHERE (id_veiculo = '".$pedido."' or num_pedido = '".$pedido."')")or die("erro no delete remover veiculo");
 			
 		
 		if($remover && $removerHist && $removerAgenda && $removerAgendaHist && $removerColeta && $removerColetaHist && $removerColetaStatus && $removerVeiculo && $removerOrdem){
-			$limpar = mysqli_query($con,"truncate homologacao_ag.lista_gerado")or die(mysqli_error($con));	
+			$limpar = mysqli_query($con,"truncate sistemas_ag.lista_gerado")or die(mysqli_error($con));	
 			echo "1";
 		}else{
 			echo "0";
@@ -1611,10 +1577,10 @@
 		$num_pedido = $_REQUEST['num_pedido'];
 		
 		//Tabela de Histórico
-		$update = mysqli_query($con,"UPDATE `homologacao_ag`.`clientes_ag_hist` SET `status`='2' WHERE `num_pedido`='".$num_pedido."'")or die("erro no update de status");
+		$update = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag_hist` SET `status`='2' WHERE `num_pedido`='".$num_pedido."'")or die("erro no update de status");
 		
 		//Tabela Principal
-		$update = mysqli_query($con,"UPDATE `homologacao_ag`.`clientes_ag` SET `status`='2' WHERE `num_pedido`='".$num_pedido."'")or die("erro no update de status");
+		$update = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag` SET `status`='2' WHERE `num_pedido`='".$num_pedido."'")or die("erro no update de status");
 		
 		if($update){
 			echo "1";
@@ -1632,9 +1598,9 @@
 		$sql = mysqli_query($con,"SELECT 
     						 distinct a.num_pedido
 						   FROM
-    						 homologacao_ag.clientes_ag a
+    						 sistemas_ag.clientes_ag a
         						LEFT JOIN
-    						 homologacao_ag.veiculos_ag b ON a.num_pedido = b.num_pedido
+    						 sistemas_ag.veiculos_ag b ON a.num_pedido = b.num_pedido
     						 where a.status = '2' 
 							 and a.num_pedido not like '%.%' 
                              and a.num_pedido not like '%-%'
@@ -1656,7 +1622,7 @@
 			if($perfil == '1'){
 				$client = $cnpj;
 			}else{
-				$buscaCli = mysqli_query($con,"select distinct cnpj from homologacao_ag.clientes_ag where num_pedido = '".$num_pedido."'")or die(mysqli_error($con));
+				$buscaCli = mysqli_query($con,"select distinct cnpj from sistemas_ag.clientes_ag where num_pedido = '".$num_pedido."'")or die(mysqli_error($con));
 				$returnCli = mysqli_fetch_array($buscaCli);
 				$client = $returnCli['cnpj'];
 			}
@@ -1664,7 +1630,7 @@
 			$codigoUnico = substr(uniqid(rand()), 0, 4);
 			
 			//Aqui verifico se o código acima já foi usado
-			$verificaCodigo = mysqli_query($con,"select codigo from homologacao_ag.codigo_unico where codigo = '".$codigoUnico."'")or die("erro no select codigo unico");
+			$verificaCodigo = mysqli_query($con,"select codigo from sistemas_ag.codigo_unico where codigo = '".$codigoUnico."'")or die("erro no select codigo unico");
 			
 			//Aqui verifico o retorno da query acima
 			$resultCodigo = mysqli_num_rows($verificaCodigo);
@@ -1672,7 +1638,7 @@
 				$novoCodigo = substr(uniqid(rand()), 0, 4);
 				$numbers = $novoCodigo;
 			}else{
-				$insertCodigo = mysqli_query($con,"insert into homologacao_ag.codigo_unico (codigo) values ('".$codigoUnico."')")or die("erro no insert codigo unico");
+				$insertCodigo = mysqli_query($con,"insert into sistemas_ag.codigo_unico (codigo) values ('".$codigoUnico."')")or die("erro no insert codigo unico");
 				$numbers = $codigoUnico;
 			}
 			
@@ -1682,36 +1648,36 @@
 			if($qtdVirgula > 0){
 				$pedido = explode(",",$num_pedido);
 				for($i=0; $i <= $qtdVirgula; $i++){	
-					$insert = mysqli_query($con,"insert into homologacao_ag.veiculos_ag (cnpj,num_pedido,qtd_veiculos,id_veiculo,tipo,cliente) values ('".$cnpj."','".trim($pedido[$i])."',1,'".$veiculo_id."','PED','".$client."')")or die(mysqli_error($con));
+					$insert = mysqli_query($con,"insert into sistemas_ag.veiculos_ag (cnpj,num_pedido,qtd_veiculos,id_veiculo,tipo,cliente) values ('".$cnpj."','".trim($pedido[$i])."',1,'".$veiculo_id."','PED','".$client."')")or die(mysqli_error($con));
 					//Pega o id_veiculo para unificar os pedidos a um veículo
-					$pegaId = mysqli_query($con,"select id_veiculo from homologacao_ag.veiculos_ag where num_pedido = '".trim($pedido[$i])."'")or die("erro no select pegaId");
+					$pegaId = mysqli_query($con,"select id_veiculo from sistemas_ag.veiculos_ag where num_pedido = '".trim($pedido[$i])."'")or die("erro no select pegaId");
 					$rowId = mysqli_num_rows($pegaId);
 					if($rowId > 0){
 						$returnId = mysqli_fetch_array($pegaId);
 						$id_veiculo = $returnId['id_veiculo'];
-						$pegaPedido = mysqli_query($con,"select num_pedido from homologacao_ag.veiculos_ag where id_veiculo = '".$id_veiculo."'")or die(mysqli_error($con));
+						$pegaPedido = mysqli_query($con,"select num_pedido from sistemas_ag.veiculos_ag where id_veiculo = '".$id_veiculo."'")or die(mysqli_error($con));
 						while($returnPedido = mysqli_fetch_array($pegaPedido)){
-							$updatePedido = mysqli_query($con,"UPDATE `homologacao_ag`.`clientes_ag` SET `num_pedido`='".$id_veiculo."', time_stamp=now() WHERE num_pedido = '".$returnPedido['num_pedido']."';")or die("erro no updatePedido");
+							$updatePedido = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag` SET `num_pedido`='".$id_veiculo."', time_stamp=now() WHERE num_pedido = '".$returnPedido['num_pedido']."';")or die("erro no updatePedido");
 						}
 					}		
 				}		
 			}else{
 				$pedido = $num_pedido;
 				
-				$insert = mysqli_query($con,"insert into homologacao_ag.veiculos_ag (cnpj,num_pedido,qtd_veiculos,id_veiculo,tipo,cliente) values ('".$cnpj."','".$pedido."',1,'".$veiculo_id."','PED','".$client."')")or die(mysqli_error($con));
-				$pegaId = mysqli_query($con,"select id_veiculo from homologacao_ag.veiculos_ag where num_pedido = '".$pedido."'")or die("erro no select pegaId");
+				$insert = mysqli_query($con,"insert into sistemas_ag.veiculos_ag (cnpj,num_pedido,qtd_veiculos,id_veiculo,tipo,cliente) values ('".$cnpj."','".$pedido."',1,'".$veiculo_id."','PED','".$client."')")or die(mysqli_error($con));
+				$pegaId = mysqli_query($con,"select id_veiculo from sistemas_ag.veiculos_ag where num_pedido = '".$pedido."'")or die("erro no select pegaId");
 				$rowId = mysqli_num_rows($pegaId);
 				if($rowId > 0){
 					$returnId = mysqli_fetch_array($pegaId);
 					$id_veiculo = $returnId['id_veiculo'];
-					$pegaPedido = mysqli_query($con,"select num_pedido from homologacao_ag.veiculos_ag where id_veiculo = '".$id_veiculo."'")or die(mysqli_error($con));
+					$pegaPedido = mysqli_query($con,"select num_pedido from sistemas_ag.veiculos_ag where id_veiculo = '".$id_veiculo."'")or die(mysqli_error($con));
 					while($returnPedido = mysqli_fetch_array($pegaPedido)){
-						$updatePedido = mysqli_query($con,"UPDATE `homologacao_ag`.`clientes_ag` SET `num_pedido`='".$id_veiculo."', time_stamp=now() WHERE num_pedido = '".$returnPedido['num_pedido']."';")or die("erro no updatePedido");
+						$updatePedido = mysqli_query($con,"UPDATE `sistemas_ag`.`clientes_ag` SET `num_pedido`='".$id_veiculo."', time_stamp=now() WHERE num_pedido = '".$returnPedido['num_pedido']."';")or die("erro no updatePedido");
 					}
 				}
 			}
 			if($insert){	
-				$limpar = mysqli_query($con,"truncate homologacao_ag.lista_gerado")or die(mysqli_error($con));	
+				$limpar = mysqli_query($con,"truncate sistemas_ag.lista_gerado")or die(mysqli_error($con));	
 				//buscarPedidos($perfil, $cnpj, $con, $conAG);
 				echo "1";
 			}else{
@@ -1731,9 +1697,9 @@
 					$busClient = mysqli_query($con, "SELECT 
     													cnpj_cli
 													FROM
-    													homologacao_ag.cad_transp_ag a
+    													sistemas_ag.cad_transp_ag a
     													inner join
-    													homologacao_ag.clientes_ag b
+    													sistemas_ag.clientes_ag b
     													on a.cnpj_cli = b.cnpj
 													WHERE
 												cnpj_transp = '".$cnpj."'
@@ -1746,7 +1712,7 @@
 					$client = $cnpj;
 				}
 				
-				$query = mysqli_query($con,"select num_pedido,  mid(num_pedido,1,4) prefix from homologacao_ag.veiculos_ag where cnpj = '".$cnpj."' and (id_veiculo is null or id_veiculo = '' or id_veiculo = '--') and (tipo = 'VEI' or tipo is null or tipo = '') limit 1")or die("erro no select query busca pedido2");
+				$query = mysqli_query($con,"select num_pedido,  mid(num_pedido,1,4) prefix from sistemas_ag.veiculos_ag where cnpj = '".$cnpj."' and (id_veiculo is null or id_veiculo = '' or id_veiculo = '--') and (tipo = 'VEI' or tipo is null or tipo = '') limit 1")or die("erro no select query busca pedido2");
 				$result = mysqli_fetch_array($query);
 				$rows = mysqli_num_rows($query);
 				
@@ -1755,15 +1721,15 @@
 					for($i=1;$i<=$quantity;$i++){
 						$pedido_id = $result['num_pedido']."-".$i;
 						$veiculo_id = $result['prefix'].$dataSecurity;
-						$inserir = mysqli_query($con,"insert into homologacao_ag.veiculos_ag (cnpj,num_pedido,qtd_veiculos,id_veiculo,tipo) values ('".$cnpj."','".$pedido_id."',1,'".$veiculo_id."','VEI') on duplicate key update cnpj='".$cnpj."', num_pedido='".$pedido_id."', qtd_veiculos=1, id_veiculo = '".$veiculo_id."'")or die("erro no insert do cadastro do id veiculo2");
+						$inserir = mysqli_query($con,"insert into sistemas_ag.veiculos_ag (cnpj,num_pedido,qtd_veiculos,id_veiculo,tipo) values ('".$cnpj."','".$pedido_id."',1,'".$veiculo_id."','VEI') on duplicate key update cnpj='".$cnpj."', num_pedido='".$pedido_id."', qtd_veiculos=1, id_veiculo = '".$veiculo_id."'")or die("erro no insert do cadastro do id veiculo2");
 						if($inserir){	
 							//Carrega o estoque com o novo pedido
-							$carregaEstoque = mysqli_query($con,"INSERT INTO homologacao_ag.clientes_ag (num_pedido,nota_fiscal,lote_serial,produto,qtd_disp,lote,unid_medida,pedido,nome_cli,cnpj,endereco,numero,bairro,cep_cli,cidade,cod_id,email_cli,tel_cli,status,palete,cubagem,auth,qtd_composto,forma)
-							SELECT '".$pedido_id."',nota_fiscal,lote_serial,produto,qtd_disp,lote,unid_medida,pedido/".$quantity.",nome_cli,cnpj,endereco,numero,bairro,cep_cli,cidade,cod_id,email_cli,tel_cli,status,palete,cubagem/".$quantity.",auth,qtd_composto,forma FROM homologacao_ag.clientes_ag_hist where num_pedido = '".$result['num_pedido']."'")or die("erro no select carregaEstoque");
+							$carregaEstoque = mysqli_query($con,"INSERT INTO sistemas_ag.clientes_ag (num_pedido,nota_fiscal,lote_serial,produto,qtd_disp,lote,unid_medida,pedido,nome_cli,cnpj,endereco,numero,bairro,cep_cli,cidade,cod_id,email_cli,tel_cli,status,palete,cubagem,auth,qtd_composto,forma)
+							SELECT '".$pedido_id."',nota_fiscal,lote_serial,produto,qtd_disp,lote,unid_medida,pedido/".$quantity.",nome_cli,cnpj,endereco,numero,bairro,cep_cli,cidade,cod_id,email_cli,tel_cli,status,palete,cubagem/".$quantity.",auth,qtd_composto,forma FROM sistemas_ag.clientes_ag_hist where num_pedido = '".$result['num_pedido']."'")or die("erro no select carregaEstoque");
 						}
 					}
-					$remove = mysqli_query($con,"delete from homologacao_ag.veiculos_ag where num_pedido = '".$result['num_pedido']."'")or die("erro no delete remove pedido unico");
-					$remove = mysqli_query($con,"delete from homologacao_ag.clientes_ag where num_pedido = '".$result['num_pedido']."'")or die("erro no delete remove pedido unico");
+					$remove = mysqli_query($con,"delete from sistemas_ag.veiculos_ag where num_pedido = '".$result['num_pedido']."'")or die("erro no delete remove pedido unico");
+					$remove = mysqli_query($con,"delete from sistemas_ag.clientes_ag where num_pedido = '".$result['num_pedido']."'")or die("erro no delete remove pedido unico");
 					if($inserir){
 						// "ADICIONADO COM SUCESSO";
 						echo "1";
@@ -1772,22 +1738,22 @@
 						echo "0";
 					}
 				}else{
-					$insert_status = mysqli_query($con,"insert into homologacao_ag.veiculos_ag (cnpj,num_pedido,qtd_veiculos,cliente) values ('".$cnpj."','".$num_pedido."',1,'".$client."')")or die("erro no insert veiculo");
+					$insert_status = mysqli_query($con,"insert into sistemas_ag.veiculos_ag (cnpj,num_pedido,qtd_veiculos,cliente) values ('".$cnpj."','".$num_pedido."',1,'".$client."')")or die("erro no insert veiculo");
 					
 					if($insert_status){
 						for($i=1;$i<=$quantity;$i++){
 							$pedido_id = $num_pedido."-".$i;
 							$veiculo_id = substr($num_pedido,0,4).$dataSecurity;
-							$inserir = mysqli_query($con,"insert into homologacao_ag.veiculos_ag (cnpj,num_pedido,qtd_veiculos,id_veiculo,tipo,cliente) values ('".$cnpj."','".$pedido_id."',1,'".$veiculo_id."','VEI','".$client."') on duplicate key update cnpj='".$cnpj."', num_pedido='".$pedido_id."', qtd_veiculos=1, id_veiculo = '".$veiculo_id."'")or die("erro no insert do cadastro do id veiculo2");
+							$inserir = mysqli_query($con,"insert into sistemas_ag.veiculos_ag (cnpj,num_pedido,qtd_veiculos,id_veiculo,tipo,cliente) values ('".$cnpj."','".$pedido_id."',1,'".$veiculo_id."','VEI','".$client."') on duplicate key update cnpj='".$cnpj."', num_pedido='".$pedido_id."', qtd_veiculos=1, id_veiculo = '".$veiculo_id."'")or die("erro no insert do cadastro do id veiculo2");
 							if($inserir){	
 								//Carrega o estoque com o novo pedido
-								$carregaEstoque = mysqli_query($con,"INSERT INTO homologacao_ag.clientes_ag (num_pedido,nota_fiscal,lote_serial,produto,qtd_disp,lote,unid_medida,pedido,nome_cli,cnpj,endereco,numero,bairro,cep_cli,cidade,cod_id,email_cli,tel_cli,status,palete,cubagem,auth,qtd_composto,forma)
-								SELECT '".$pedido_id."',nota_fiscal,lote_serial,produto,qtd_disp,lote,unid_medida,pedido/".$quantity.",nome_cli,cnpj,endereco,numero,bairro,cep_cli,cidade,cod_id,email_cli,tel_cli,status,palete,cubagem/".$quantity.",auth,qtd_composto,forma FROM homologacao_ag.clientes_ag_hist where num_pedido = '".$num_pedido."'")or die("erro no select carregaEstoque");
+								$carregaEstoque = mysqli_query($con,"INSERT INTO sistemas_ag.clientes_ag (num_pedido,nota_fiscal,lote_serial,produto,qtd_disp,lote,unid_medida,pedido,nome_cli,cnpj,endereco,numero,bairro,cep_cli,cidade,cod_id,email_cli,tel_cli,status,palete,cubagem,auth,qtd_composto,forma)
+								SELECT '".$pedido_id."',nota_fiscal,lote_serial,produto,qtd_disp,lote,unid_medida,pedido/".$quantity.",nome_cli,cnpj,endereco,numero,bairro,cep_cli,cidade,cod_id,email_cli,tel_cli,status,palete,cubagem/".$quantity.",auth,qtd_composto,forma FROM sistemas_ag.clientes_ag_hist where num_pedido = '".$num_pedido."'")or die("erro no select carregaEstoque");
 							}
 						}
-						$remove = mysqli_query($con,"delete from homologacao_ag.veiculos_ag where num_pedido = '".$num_pedido."'")or die("erro no delete remove pedido unico");
-						$remove = mysqli_query($con,"delete from homologacao_ag.clientes_ag where num_pedido = '".$num_pedido."'")or die("erro no delete remove pedido unico");
-						$limpa = mysqli_query($con,"truncate homologacao_ag.lista_gerado")or die(mysqli_error($con));
+						$remove = mysqli_query($con,"delete from sistemas_ag.veiculos_ag where num_pedido = '".$num_pedido."'")or die("erro no delete remove pedido unico");
+						$remove = mysqli_query($con,"delete from sistemas_ag.clientes_ag where num_pedido = '".$num_pedido."'")or die("erro no delete remove pedido unico");
+						$limpa = mysqli_query($con,"truncate sistemas_ag.lista_gerado")or die(mysqli_error($con));
 						if($inserir){
 							// "ADICIONADO COM SUCESSO";
 							echo "1";
@@ -1808,9 +1774,9 @@
 										mid(a.data,1,10) data,
 										trim(mid(a.data,11)) hora,
     									case when hora is null then '0' else hora end Indisponivel
-									 FROM homologacao_ag.agendamento_ag a
+									 FROM sistemas_ag.agendamento_ag a
  										  left join
- 										  homologacao_ag.data_block b
+ 										  sistemas_ag.data_block b
  									  on trim(mid(a.data,11,3)) = b.hora and a.data = b.data
 									  where mid(a.data,1,10) = '".$date."'
 									  group by a.data")or die(mysqli_error($con));
@@ -1832,9 +1798,9 @@
 										cnpj_transp,
 										razao_social
 									  FROM
-										homologacao_ag.cad_transp_ag
+										sistemas_ag.cad_transp_ag
 									  WHERE
-										cnpj_cli = '".$cnpjCli."' group by cnpj_transp
+										cnpj_cli = '".$cnpjCli."'
 										")or die(mysqli_error($con));
 			
 			$db_data = array();
@@ -1864,7 +1830,7 @@
 				$buscaEmpresa = mysqli_query($con,"select 
 													  a.cnpj_cli, 
 													  a.nome_cli 
-												   from homologacao_ag.cad_transp_ag a inner join homologacao_ag.clientes_ag b
+												   from sistemas_ag.cad_transp_ag a inner join sistemas_ag.clientes_ag b
 													    on a.cnpj_cli = b.cnpj 
 														where a.cnpj_transp = '".$cnpj."' 
 														and num_pedido = '".$pedidos."'
@@ -1905,14 +1871,14 @@
 			$tel_cli = $row['TEL'];
 				
 			//Verifica se está flegado sem processo
-			$pegaId2 = mysqli_query($con,"select id_veiculo, num_pedido, tipo, cliente from homologacao_ag.veiculos_ag where (num_pedido = '".$pedidos."' or id_veiculo = '".$pedidos."')")or die("erro no select pegaId");
+			$pegaId2 = mysqli_query($con,"select id_veiculo, num_pedido, tipo, cliente from sistemas_ag.veiculos_ag where (num_pedido = '".$pedidos."' or id_veiculo = '".$pedidos."')")or die("erro no select pegaId");
 			$returnId2 = mysqli_fetch_assoc($pegaId2);
 			if($returnId2['id_veiculo'] == "--"){
-				$limpaVeiculo = mysqli_query($con,"DELETE FROM `homologacao_ag`.`veiculos_ag` WHERE `num_pedido` = '".$pedidos."'")or die("erro a delete limpaVeiculo");
+				$limpaVeiculo = mysqli_query($con,"DELETE FROM `sistemas_ag`.`veiculos_ag` WHERE `num_pedido` = '".$pedidos."'")or die("erro a delete limpaVeiculo");
 			}	
 			
 			//Pega o id_veiculo para unificar os pedidos a um veículo
-			$pegaId = mysqli_query($con,"select id_veiculo, num_pedido, tipo, cliente from homologacao_ag.veiculos_ag where (num_pedido = '".$pedidos."' or id_veiculo = '".$pedidos."')")or die("erro no select pegaId");
+			$pegaId = mysqli_query($con,"select id_veiculo, num_pedido, tipo, cliente from sistemas_ag.veiculos_ag where (num_pedido = '".$pedidos."' or id_veiculo = '".$pedidos."')")or die("erro no select pegaId");
 			$rowId = mysqli_num_rows($pegaId);
 			
 			if($rowId > 0){
@@ -1935,12 +1901,12 @@
 						$qv = explode("-",$num_pedido);
 						$rn = $qv[0];
 						
-						$pesqQtd = mysqli_query($con,"select case when sum(qtd_veiculos) is null then 0 else sum(qtd_veiculos) end soma from homologacao_ag.veiculos_ag where num_pedido like '%".$num_pedido."%'")or die("erro no select pesqQtd");
+						$pesqQtd = mysqli_query($con,"select case when sum(qtd_veiculos) is null then 0 else sum(qtd_veiculos) end soma from sistemas_ag.veiculos_ag where num_pedido like '%".$num_pedido."%'")or die("erro no select pesqQtd");
 						$qtd_ped = mysqli_fetch_array($pesqQtd);
 						$qtd_pedida = $qtd_ped['soma'];
 					}
 					
-				$pegaQtd = mysqli_query($con,"select sum(qtd_veiculos) qtd_veiculo from homologacao_ag.veiculos_ag where (id_veiculo = '".$num_pedido."' or num_pedido = '".$num_pedido."')")or die("erro no select pegaQtd");
+				$pegaQtd = mysqli_query($con,"select sum(qtd_veiculos) qtd_veiculo from sistemas_ag.veiculos_ag where (id_veiculo = '".$num_pedido."' or num_pedido = '".$num_pedido."')")or die("erro no select pegaQtd");
 				$returnQtd = mysqli_fetch_array($pegaQtd);
 				$qtd_veiculo = intval($returnQtd['qtd_veiculo']);
 				
@@ -1951,7 +1917,7 @@
 				$qtd_pedida = 1;
 			}
 				
-			$select = mysqli_query($con,"select * from homologacao_ag.coleta_ag where num_pedido = '".$num_pedido."' and cnpj_transp = '".$cnpj_transp."'")or die("erro no select verifica coleta existe");
+			$select = mysqli_query($con,"select * from sistemas_ag.coleta_ag where num_pedido = '".$num_pedido."' and cnpj_transp = '".$cnpj_transp."'")or die("erro no select verifica coleta existe");
 			$busca_end = mysqli_query($con,"select 
 											end_transp,
 											numero_transp,
@@ -1970,13 +1936,13 @@
 											pl_container,
 											tel_transp,
 											email_transp
-										from homologacao_ag.coleta_ag 
+										from sistemas_ag.coleta_ag 
 										where cnpj_transp = '".$cnpj_transp."' and num_pedido = '".$num_pedido."'")or die("erro no select verifica endereço existe");
 			$rows = mysqli_num_rows($select);
 			if($cnpj_transp){
 				$dados = mysqli_fetch_object($busca_end);
 				if($rows > 0){
-					$update = mysqli_query($con,"UPDATE `homologacao_ag`.`coleta_ag` SET 
+					$update = mysqli_query($con,"UPDATE `sistemas_ag`.`coleta_ag` SET 
 					cnpj_cli='".$cnpj."', 
 					cnpj_transp='".$cnpj_transp."', 
 					nome_cli='".$cliente."', 
@@ -2004,26 +1970,26 @@
 				}
 			}
 			
-			$consultAgenda = mysqli_query($con,"select (count(*) + ".$qtd_pedida.") total from homologacao_ag.agendamento_ag where data = '".$valores."'")or die("erro no select consultAgenda");
+			$consultAgenda = mysqli_query($con,"select (count(*) + ".$qtd_pedida.") total from sistemas_ag.agendamento_ag where data = '".$valores."'")or die("erro no select consultAgenda");
 			$returnAgenda = mysqli_fetch_array($consultAgenda);
 			
-			$consultPermissao = mysqli_query($con,"select case when permissao is null then '0' else permissao end permissao from homologacao_ag.cad_transp_ag where cnpj_cli = '".$cnpj."' and cnpj_transp = '".$cnpj_transp."'")or die("erro no select consultPermissao");
+			$consultPermissao = mysqli_query($con,"select case when permissao is null then '0' else permissao end permissao from sistemas_ag.cad_transp_ag where cnpj_cli = '".$cnpj."' and cnpj_transp = '".$cnpj_transp."'")or die("erro no select consultPermissao");
 			$returnPermissao = mysqli_fetch_array($consultPermissao);
 			
 			if($returnAgenda['total'] <= 6){
 				if($returnId['tipo'] == 'VEI'){
 					$num = explode("-",$returnId['num_pedido']);
 					$nped = $num[0];
-					$pegaSub = mysqli_query($con,"select num_pedido from homologacao_ag.veiculos_ag where num_pedido like '%".$returnId['num_pedido']."%'")or die("erro no select pegaSub");
+					$pegaSub = mysqli_query($con,"select num_pedido from sistemas_ag.veiculos_ag where num_pedido like '%".$returnId['num_pedido']."%'")or die("erro no select pegaSub");
 						
 					while($resultSub = mysqli_fetch_array($pegaSub)){
 							
-						$agendar = mysqli_query($con,"insert into homologacao_ag.agendamento_ag 	(num_pedido,data,cnpj_cli,nome_cli,endereco,numero,bairro,cep_cli,cidade,cod_cli,cnpj_transp,transportadora,email_cli,qtd_veiculos,ajudante,status)
+						$agendar = mysqli_query($con,"insert into sistemas_ag.agendamento_ag 	(num_pedido,data,cnpj_cli,nome_cli,endereco,numero,bairro,cep_cli,cidade,cod_cli,cnpj_transp,transportadora,email_cli,qtd_veiculos,ajudante,status)
 						values
 						('".$resultSub['num_pedido']."','$valores','$cnpj','$clientes','$endereco','$numero','$bairro','$cep_cli','$cidade',$cod_cli,'$cnpj_transp','$nome_transp','$email_cli',".$qtd_veiculo.",'".$ajudante."','0');")or die("error no insert do agendamento 2".mysqli_error($con));
 					}
 				}elseif($returnId['tipo'] == 'PED'){
-						$agendar = mysqli_query($con,"insert into homologacao_ag.agendamento_ag (num_pedido,data,cnpj_cli,nome_cli,endereco,numero,bairro,cep_cli,cidade,cod_cli,cnpj_transp,transportadora,email_cli,qtd_veiculos,ajudante,status)
+						$agendar = mysqli_query($con,"insert into sistemas_ag.agendamento_ag (num_pedido,data,cnpj_cli,nome_cli,endereco,numero,bairro,cep_cli,cidade,cod_cli,cnpj_transp,transportadora,email_cli,qtd_veiculos,ajudante,status)
 						select 
 							'$num_pedido',
 							'$valores',
@@ -2041,12 +2007,12 @@
 							".$qtd_veiculo.",
 							'$ajudante',
 							'0' 
-						from homologacao_ag.veiculos_ag a inner join homologacao_ag.clientes_ag_hist b
+						from sistemas_ag.veiculos_ag a inner join sistemas_ag.clientes_ag_hist b
 							on a.num_pedido = b.num_pedido where id_veiculo = '".$num_pedido."' 
 							group by cliente,id_veiculo")or die("error no insert do agendamento 3 ".mysqli_error($con));
 						
 				}else{		
-					$agendar = mysqli_query($con,"insert into homologacao_ag.agendamento_ag (num_pedido,data,cnpj_cli,nome_cli,endereco,numero,bairro,cep_cli,cidade,cod_cli,cnpj_transp,transportadora,email_cli,qtd_veiculos,ajudante,status)
+					$agendar = mysqli_query($con,"insert into sistemas_ag.agendamento_ag (num_pedido,data,cnpj_cli,nome_cli,endereco,numero,bairro,cep_cli,cidade,cod_cli,cnpj_transp,transportadora,email_cli,qtd_veiculos,ajudante,status)
 					values
 					('$pedidos','$valores','$cnpj','$clientes','$endereco','$numero','$bairro','$cep_cli','$cidade',$cod_cli,'$cnpj_transp','$nome_transp','$email_cli',".$qtd_veiculo.",'$ajudante','0');")or die("error no insert do agendamento 4 ".mysqli_error($con));
 					
@@ -2079,7 +2045,7 @@
 				$busca = mysqli_query($con,"select 
 												group_concat('''',cnpj_cli,'''') as cnpj_cli, 
 												case when permissao is null then '0' else group_concat(permissao) end permissao  
-											from homologacao_ag.cad_transp_ag where cnpj_transp = '".$transp."'")or die(mysqli_error($con));
+											from sistemas_ag.cad_transp_ag where cnpj_transp = '".$transp."'")or die(mysqli_error($con));
 				$rows = mysqli_num_rows($busca);
 				if($rows > 0){
 					$cnpj_cli = mysqli_fetch_array($busca);
@@ -2095,7 +2061,7 @@
 				$busca = mysqli_query($con,"select 
 												group_concat('''',cnpj_transp,'''') as cnpj_transp, 
 												case when permissao is null then '0' else permissao end permissao
-											from homologacao_ag.cad_transp_ag where cnpj_cli = '".$cnpj."' ")or die("erro no select busca cliente ".mysqli_error($con));
+											from sistemas_ag.cad_transp_ag where cnpj_cli = '".$cnpj."' ")or die("erro no select busca cliente ".mysqli_error($con));
 				$rows = mysqli_num_rows($busca);
 				if($rows > 0){
 					$cnpj_cli = mysqli_fetch_array($busca);
@@ -2136,13 +2102,13 @@
 													cnpj_cli,
 													nome_cli,
 													cnpj_transp
-												  from homologacao_ag.agendamento_ag where cnpj_cli in (".$busca.") order by length(num_pedido), num_pedido asc")or die("<b style='color: white;'>erro do select de consultar agendamento</b>");
+												  from sistemas_ag.agendamento_ag where cnpj_cli in (".$busca.") order by length(num_pedido), num_pedido asc")or die("<b style='color: white;'>erro do select de consultar agendamento</b>");
 				}else{
 					$perfil = " b.cnpj_transp ";
 					$verifTransp = "select 
 							case when cnpj_cli is null then concat('''''') else group_concat('''',cnpj_cli,'''') end clientes, 
 							case when permissao is null then '' else permissao end permissao  
-						from homologacao_ag.cad_transp_ag where cnpj_transp  = ".$transp." and permissao = '1'";
+						from sistemas_ag.cad_transp_ag where cnpj_transp  = ".$transp." and permissao = '1'";
 		
 					$statusPermitido = mysqli_query($con,$verifTransp)or die("erro no select verifTransp");
 		
@@ -2170,7 +2136,7 @@
 										a.cnpj_cli,
 										a.nome_cli,
 										a.cnpj_transp
-									from homologacao_ag.agendamento_ag a
+									from sistemas_ag.agendamento_ag a
 										where $linked
 											  case when cnpj_transp = '' then a.cnpj_cli in (".$per.") else a.cnpj_transp end
 											  and a.cnpj_transp in (".$transp.",'') 
@@ -2187,7 +2153,7 @@
 										cnpj_cli,
 										nome_cli,
 										cnpj_transp
-									  from homologacao_ag.agendamento_ag where cnpj_cli in (".$busca.") order by length(num_pedido), num_pedido asc")or die("<b style='color: white;'>erro do select de consultar agendamento</b>");
+									  from sistemas_ag.agendamento_ag where cnpj_cli in (".$busca.") order by length(num_pedido), num_pedido asc")or die("<b style='color: white;'>erro do select de consultar agendamento</b>");
 				$rows = mysqli_num_rows($sql);
 			}
 
@@ -2204,8 +2170,8 @@
 					
 					$timeLocked = mysqli_query($con,"SELECT 
 															a.tempo 
-														FROM homologacao_ag.time_clientes a 
-															 inner join homologacao_ag.cad_transp_ag b
+														FROM sistemas_ag.time_clientes a 
+															 inner join sistemas_ag.cad_transp_ag b
 															 on a.cnpj = $perfil
 														where b.cnpj_cli in (".$busca.") 
 															  and b.cnpj_transp in (".$transp.")
@@ -2263,7 +2229,7 @@
 						$pos = strpos($num_pedido,"_");
 						    if(empty($pos) == 1){	
 								$stat[] = true;	
-								$insertDados = mysqli_query($con,"insert into homologacao_ag.lista_agendados 
+								$insertDados = mysqli_query($con,"insert into sistemas_ag.lista_agendados 
      														(
 																num_pedido, 
 																data_agend, 
@@ -2296,7 +2262,7 @@
 														nome_cli,
 														sub,
 														horas
-													  FROM homologacao_ag.lista_agendados
+													  FROM sistemas_ag.lista_agendados
 													  where cnpj_cli in (".$busca.")
 													  and num_pedido not regexp '_'
 													  group by num_pedido")or die(mysqli_error($con));
@@ -2331,14 +2297,14 @@
 				$pedido = $pedidos;
 			}
 			
-			$pegaId = mysqli_query($con,"select id_veiculo, num_pedido, tipo from homologacao_ag.veiculos_ag where num_pedido = '".$pedidos."' ")or die("erro no select pegaId");
+			$pegaId = mysqli_query($con,"select id_veiculo, num_pedido, tipo from sistemas_ag.veiculos_ag where num_pedido = '".$pedidos."' ")or die("erro no select pegaId");
 			$rowId = mysqli_num_rows($pegaId);
 			if($rowId > 0){
 				$returnId = mysqli_fetch_array($pegaId);
 				if($returnId['tipo'] == 'PED'){
 					$qtd_pedida = 1;
 				}else{
-					$pesqQtd = mysqli_query($con,"select sum(qtd_veiculos) soma from homologacao_ag.veiculos_ag where num_pedido like '%".$pedidos."%'")or die("erro no select pesqQtd");
+					$pesqQtd = mysqli_query($con,"select sum(qtd_veiculos) soma from sistemas_ag.veiculos_ag where num_pedido like '%".$pedidos."%'")or die("erro no select pesqQtd");
 					$qtd_ped = mysqli_fetch_array($pesqQtd);
 					$qtd_pedida = $qtd_ped['soma'];
 				}
@@ -2346,20 +2312,20 @@
 				$qtd_pedida = 1;
 			}
 			
-			$consultAgenda = mysqli_query($con,"select count(*) + ".$qtd_pedida." total from homologacao_ag.agendamento_ag where data = '".$data_hora."'")or die("erro no select consultAgenda");
+			$consultAgenda = mysqli_query($con,"select count(*) + ".$qtd_pedida." total from sistemas_ag.agendamento_ag where data = '".$data_hora."'")or die("erro no select consultAgenda");
 			$returnAgenda = mysqli_fetch_array($consultAgenda);
 			
 			
 			if($returnAgenda['total'] <= 6){
 				//altera data e hora do agendamento 
 			
-			$historico = mysqli_query($con,"UPDATE `homologacao_ag`.`agendamento_hist` SET `data`='".$data_hora."', time_stamp = now() WHERE `num_pedido` like '%".$pedidos."%'")or die("erro no update do historico do agendamento");
+			$historico = mysqli_query($con,"UPDATE `sistemas_ag`.`agendamento_hist` SET `data`='".$data_hora."', time_stamp = now() WHERE `num_pedido` like '%".$pedidos."%'")or die("erro no update do historico do agendamento");
 			
 				 //altera data e hora do agendamento
-				 $update = mysqli_query($con,"UPDATE `homologacao_ag`.`agendamento_ag` SET `data`='".$data_hora."', timestamp = now() WHERE `num_pedido` like '%".$pedidos."%'")or die("error no update data e hora agendamento");  
+				 $update = mysqli_query($con,"UPDATE `sistemas_ag`.`agendamento_ag` SET `data`='".$data_hora."', timestamp = now() WHERE `num_pedido` like '%".$pedidos."%'")or die("error no update data e hora agendamento");  
 				
 				if($update){ 
-				    $limpar = mysqli_query($con,"truncate homologacao_ag.lista_agendados")or die(mysqli_error($con));
+				    $limpar = mysqli_query($con,"truncate sistemas_ag.lista_agendados")or die(mysqli_error($con));
 					sendEmail($pedidos, "e");
 					//echo "1"; 
 				}else{ 
@@ -2384,11 +2350,11 @@
 			$pedido = $pedidos;
 		}
 		
-		$deletar = mysqli_query($con,"delete from homologacao_ag.agendamento_ag where num_pedido like '%".$pedidos."%'")or die("erro do delete");
+		$deletar = mysqli_query($con,"delete from sistemas_ag.agendamento_ag where num_pedido like '%".$pedidos."%'")or die("erro do delete");
 		
 		
 		if($deletar){
-			$limpar = mysqli_query($con,"truncate homologacao_ag.lista_agendados")or die(mysqli_error($con));
+			$limpar = mysqli_query($con,"truncate sistemas_ag.lista_agendados")or die(mysqli_error($con));
 			sendEmail($pedidos, "c");
 			//echo "1";
 		}else{
@@ -2435,11 +2401,11 @@
 					email_transp,
 					c.tipo
 				FROM
-					homologacao_ag.cad_transp_ag a
+					sistemas_ag.cad_transp_ag a
 						INNER JOIN
-					homologacao_ag.transportadora_ag b ON cnpj = a.cnpj_transp
+					sistemas_ag.transportadora_ag b ON cnpj = a.cnpj_transp
 						LEFT JOIN
-					homologacao_ag.coleta_ag c ON c.cnpj_transp =  a.cnpj_transp
+					sistemas_ag.coleta_ag c ON c.cnpj_transp =  a.cnpj_transp
 				WHERE
 					a.cnpj_transp = '{$cnpj}'
 				GROUP BY a.cnpj_transp";
@@ -2458,7 +2424,7 @@
 		$db_data = array();
 		
 		if($perfil == '1'){
-			$bring = mysqli_query($con,"select group_concat('''',cnpj_transp,'''') as cnpj_transp from homologacao_ag.cad_transp_ag where cnpj_cli = ".$cnpj."")or die("erro no select busca cliente");
+			$bring = mysqli_query($con,"select group_concat('''',cnpj_transp,'''') as cnpj_transp from sistemas_ag.cad_transp_ag where cnpj_cli = ".$cnpj."")or die("erro no select busca cliente");
 				$lays = mysqli_num_rows($bring);
 					if($lays > 0){
 						$cj_cli = mysqli_fetch_array($bring);
@@ -2468,14 +2434,14 @@
 				$transp = $cnpj;
 				$bring = mysqli_query($con,"select group_concat('''',cnpj_cli,'''') as cnpj_cli, 
 				case when permissao is null then '0' else permissao end permissao
-				from homologacao_ag.cad_transp_ag where cnpj_transp = ".$cnpj."")or die("erro no select busca cliente ".mysqli_error($con));
+				from sistemas_ag.cad_transp_ag where cnpj_transp = ".$cnpj."")or die("erro no select busca cliente ".mysqli_error($con));
 				$lays = mysqli_num_rows($bring);
 				if($lays > 0){
 					$cj_cli = mysqli_fetch_array($bring);
 					$cnpj = $cj_cli[0];	
 				}
 				
-				$verifTransp = mysqli_query($con,"select case when group_concat('''',cnpj_cli,'''') is null then concat('''''') else group_concat('''',cnpj_cli,'''') end clientes, permissao from homologacao_ag.cad_transp_ag where cnpj_transp  = ".$transp." and permissao = '1'")or die("erro no select verifTransp");
+				$verifTransp = mysqli_query($con,"select case when group_concat('''',cnpj_cli,'''') is null then concat('''''') else group_concat('''',cnpj_cli,'''') end clientes, permissao from sistemas_ag.cad_transp_ag where cnpj_transp  = ".$transp." and permissao = '1'")or die("erro no select verifTransp");
 		
 				$permitido = mysqli_fetch_array($verifTransp);
 				
@@ -2487,7 +2453,7 @@
 				
 				$buscaPermissao = mysqli_query($con,"select 
 															a.num_pedido
-														from homologacao_ag.agendamento_ag a
+														from sistemas_ag.agendamento_ag a
 														where $linked a.cnpj_transp in ('".$transp."','') 
 														group by a.num_pedido
 														order by length(a.num_pedido), a.num_pedido asc")or die("erro no select buscaPermissao ".mysqli_error($con));
@@ -2517,7 +2483,7 @@
 	                                        group_concat(' ',a.nome_cli,' ') nome_cli,
 											a.email_cli,
 											a.cnpj_transp
-										  from homologacao_ag.agendamento_ag a 
+										  from sistemas_ag.agendamento_ag a 
 										  where status <> '1' $attech1 $attech2 group by num_pedido")or die("erro do select busca agenda total ".mysqli_error($con));	
 				
 			$linhas = mysqli_num_rows($total);
@@ -2527,10 +2493,10 @@
 					extract($result);
 					$id = $id+1;
 					
-					$verify = mysqli_query($con,"select count(*) from homologacao_ag.coleta_ag where num_pedido = '".$num_pedido."' and status in ('Y','A','N')")or die("erro no select verify pedidos especifico");
+					$verify = mysqli_query($con,"select count(*) from sistemas_ag.coleta_ag where num_pedido = '".$num_pedido."' and status in ('Y','A','N')")or die("erro no select verify pedidos especifico");
 					$rows = mysqli_fetch_row($verify);
 					
-					$status_coleta = mysqli_query($con,"select status from homologacao_ag.coleta_status where num_pedido = '".$num_pedido."'")or die("erro no select status coleta");
+					$status_coleta = mysqli_query($con,"select status from sistemas_ag.coleta_status where num_pedido = '".$num_pedido."'")or die("erro no select status coleta");
 					$str = mysqli_fetch_assoc($status_coleta);
 					
 					if($rows[0] > 0){
@@ -2583,7 +2549,7 @@
 										cnh_motor,
 										data_validade
 									FROM
-										homologacao_ag.coleta_ag
+										sistemas_ag.coleta_ag
 									WHERE ".$filter."
 										 group by cpf_motor, documento_motor")or die(mysqli_error($con));
 											
@@ -2635,23 +2601,23 @@
 
 		//Verifico se o CNPJ da transportadora existe no agendamento
 		if($categoria === "1"){
-			$verAgenda = mysqli_query($con,"select count(*) from homologacao_ag.agendamento_ag where num_pedido = '".$num_pedido."' and cnpj_transp = '".$cnpj_transp."'")or die("erro no select verAgenda 1"); 
+			$verAgenda = mysqli_query($con,"select count(*) from sistemas_ag.agendamento_ag where num_pedido = '".$num_pedido."' and cnpj_transp = '".$cnpj_transp."'")or die("erro no select verAgenda 1"); 
 			$register = mysqli_fetch_row($verAgenda);
 			if($register[0] == 0){
-				$altAgenda = mysqli_query($con,"UPDATE `homologacao_ag`.`agendamento_ag` SET `cnpj_transp`='".$cnpj_transp."', transportadora='".$nome_transp."' WHERE `num_pedido`='".$num_pedido."'")or die("erro no update no altAgenda 1");
+				$altAgenda = mysqli_query($con,"UPDATE `sistemas_ag`.`agendamento_ag` SET `cnpj_transp`='".$cnpj_transp."', transportadora='".$nome_transp."' WHERE `num_pedido`='".$num_pedido."'")or die("erro no update no altAgenda 1");
 			}
 			
 			//Vincula o cnpj da transportadora ao cliente
-			$selectTR = mysqli_query($con,"select * from homologacao_ag.cad_transp_ag where cnpj_cli = '".$cnpj_cli."' and cnpj_transp = '".$cnpj_transp."'")or die("error no select de validação");
+			$selectTR = mysqli_query($con,"select * from sistemas_ag.cad_transp_ag where cnpj_cli = '".$cnpj_cli."' and cnpj_transp = '".$cnpj_transp."'")or die("error no select de validação");
 			$rowsTR = mysqli_num_rows($selectTR);
 			if($rowsTR == 0){
-				$insertTR = mysqli_query($con,"insert into homologacao_ag.cad_transp_ag 
+				$insertTR = mysqli_query($con,"insert into sistemas_ag.cad_transp_ag 
 												(cnpj_cli,cnpj_transp,razao_social,nome_cli,tipo) 
 													values 
 												('".trim($cnpj_cli)."','".trim($cnpj_transp)."','".$nome_transp."','".$nome_cli."','".$tipo."')")or die("error na inserção do vinculo");
 			}
 		}else{
-			$consultaCli = mysqli_query($con,"select cnpj_cli, nome_cli from homologacao_ag.cad_transp_ag where cnpj_transp = '".trim($cnpj_transp)."' group by cnpj_transp")or die(mysqli_error($con));
+			$consultaCli = mysqli_query($con,"select cnpj_cli, nome_cli from sistemas_ag.cad_transp_ag where cnpj_transp = '".trim($cnpj_transp)."' group by cnpj_transp")or die(mysqli_error($con));
 			
 			$retornoCli = mysqli_fetch_array($consultaCli);
 			$cnpj_cli = $retornoCli['cnpj_cli'];
@@ -2659,12 +2625,12 @@
 		}
 		
 		//Verifica se é pedido unificado
-		$pegaId = mysqli_query($con,"select id_veiculo, num_pedido, tipo, cliente from homologacao_ag.veiculos_ag where (num_pedido = '".$num_pedido."' or id_veiculo = '".$num_pedido."')")or die("erro no select pegaId");
+		$pegaId = mysqli_query($con,"select id_veiculo, num_pedido, tipo, cliente from sistemas_ag.veiculos_ag where (num_pedido = '".$num_pedido."' or id_veiculo = '".$num_pedido."')")or die("erro no select pegaId");
 		$returnId = mysqli_fetch_array($pegaId);
 		
 		if($returnId['tipo'] == 'PED'){
 			//insere os logs tudo que cadastrado na coleta
-			$insert1 = mysqli_query($con,"insert into homologacao_ag.coleta_ag_hist 
+			$insert1 = mysqli_query($con,"insert into sistemas_ag.coleta_ag_hist 
 					(num_pedido,
 					cnpj_transp,
 					nome_transp,
@@ -2717,12 +2683,12 @@
 					trim(cliente),
 					nome_cli,
 					'A',
-					'".$tipo."' from homologacao_ag.veiculos_ag a inner join homologacao_ag.clientes_ag_hist b
+					'".$tipo."' from sistemas_ag.veiculos_ag a inner join sistemas_ag.clientes_ag_hist b
 						on a.num_pedido = b.num_pedido where id_veiculo = '$num_pedido' 
 						group by cliente,id_veiculo")or die("erro no insert ordem coleta hist 1");
 		}else{
 			//insere os logs tudo que cadastrado na coleta
-			$insert1 = mysqli_query($con,"insert into homologacao_ag.coleta_ag_hist 
+			$insert1 = mysqli_query($con,"insert into sistemas_ag.coleta_ag_hist 
 					(num_pedido,
 					cnpj_transp,
 					nome_transp,
@@ -2780,13 +2746,13 @@
 		
 		
 		//verifica se o pedido já existe na tabela
-		$verify = mysqli_query($con,"select * from homologacao_ag.coleta_ag where num_pedido = '".$num_pedido."'")or die("erro no select verifica pedido");
+		$verify = mysqli_query($con,"select * from sistemas_ag.coleta_ag where num_pedido = '".$num_pedido."'")or die("erro no select verifica pedido");
 		$rows = mysqli_num_rows($verify);
 		
 		if($rows == 0){
 			  if($returnId['tipo'] == 'PED'){
 				  //Inserção no banco de dados
-				  $insert2 = mysqli_query($con,"insert into homologacao_ag.coleta_ag 
+				  $insert2 = mysqli_query($con,"insert into sistemas_ag.coleta_ag 
 						(num_pedido,
 						cnpj_transp,
 						nome_transp,
@@ -2840,12 +2806,12 @@
 						nome_cli,
 						'A',
 						'$tipo'
-					from homologacao_ag.veiculos_ag a inner join homologacao_ag.clientes_ag_hist b
+					from sistemas_ag.veiculos_ag a inner join sistemas_ag.clientes_ag_hist b
 						on a.num_pedido = b.num_pedido where id_veiculo = '$num_pedido' 
 						group by cliente,id_veiculo")or die("erro no insert ordem coleta 2");
 			  }else{
 				  //Inserção no banco de dados
-				  $insert2 = mysqli_query($con,"insert into homologacao_ag.coleta_ag 
+				  $insert2 = mysqli_query($con,"insert into sistemas_ag.coleta_ag 
 					(num_pedido,
 					cnpj_transp,
 					nome_transp,
@@ -2902,14 +2868,14 @@
 			  }
 			  
 			  //altera status do agendamento
-			  $altera_status = mysqli_query($con,"UPDATE `homologacao_ag`.`agendamento_ag` SET `status`='1' WHERE `num_pedido`='".$num_pedido."'")or die("error no update status agendamento");  
+			  $altera_status = mysqli_query($con,"UPDATE `sistemas_ag`.`agendamento_ag` SET `status`='1' WHERE `num_pedido`='".$num_pedido."'")or die("error no update status agendamento");  
 			  
 			  
-			  $sqls = mysqli_query($con,"select logotipo from homologacao_ag.transportadora_ag where CNPJ = '".$cnpj_transp."'")or die ("error no select do upload logotipo");
+			  $sqls = mysqli_query($con,"select logotipo from sistemas_ag.transportadora_ag where CNPJ = '".$cnpj_transp."'")or die ("error no select do upload logotipo");
 			   $rows2 = mysqli_num_rows($sqls);
 			
 					if($rows2 == 0){
-						$adiciona = mysqli_query($con,"INSERT INTO homologacao_ag.transportadora_ag (CNPJ,NOME,CEP,RUA,NUMERO,BAIRRO,CIDADE,UF,TELEFONE,EMAIL, logotipo) 
+						$adiciona = mysqli_query($con,"INSERT INTO sistemas_ag.transportadora_ag (CNPJ,NOME,CEP,RUA,NUMERO,BAIRRO,CIDADE,UF,TELEFONE,EMAIL, logotipo) 
 						VALUES 
 						('$cnpj_transp','$nome_transp','$cep_transp','$end_transp', '$numero_transp','$bairro_transp','$cid_transp','$uf_transp','$tel_transp','$email_transp','') ");
 					}
@@ -2922,16 +2888,16 @@
 			  }
 		}else{
 			//altera o status N para A
-			$update = mysqli_query($con,"UPDATE `homologacao_ag`.`coleta_ag` SET `status`='A', cnpj_transp = '$cnpj_transp', nome_transp = '$nome_transp', end_transp = '$end_transp', numero_transp = '$numero_transp', bairro_transp = '$bairro_transp', cid_transp = '$cid_transp', uf_transp = '$uf_transp', cep_transp = '$cep_transp', nome_motor='$nome_motor', cpf_motor='$cpf_motor',documento_motor = '$cpf_gringo', cnh_motor='$cnh_motor', data_validade='$valid', placa='$placa', pl_carreta='$pcarreta', pl_bitrem='$pbitrem', pl_container='$container', obs='$obs', email_transp='$email_transp', tel_transp='$tel_transp', tipo='$tipo' WHERE `num_pedido`='".$num_pedido."'")or die("erro no update do status coleta ag");
+			$update = mysqli_query($con,"UPDATE `sistemas_ag`.`coleta_ag` SET `status`='A', cnpj_transp = '$cnpj_transp', nome_transp = '$nome_transp', end_transp = '$end_transp', numero_transp = '$numero_transp', bairro_transp = '$bairro_transp', cid_transp = '$cid_transp', uf_transp = '$uf_transp', cep_transp = '$cep_transp', nome_motor='$nome_motor', cpf_motor='$cpf_motor',documento_motor = '$cpf_gringo', cnh_motor='$cnh_motor', data_validade='$valid', placa='$placa', pl_carreta='$pcarreta', pl_bitrem='$pbitrem', pl_container='$container', obs='$obs', email_transp='$email_transp', tel_transp='$tel_transp', tipo='$tipo' WHERE `num_pedido`='".$num_pedido."'")or die("erro no update do status coleta ag");
 			
 			//altera status do agendamento
-			$altera_status = mysqli_query($con,"UPDATE `homologacao_ag`.`agendamento_ag` SET `status`='1'  WHERE `num_pedido`='".$num_pedido."'")or die("error no update status agendamento");  
+			$altera_status = mysqli_query($con,"UPDATE `sistemas_ag`.`agendamento_ag` SET `status`='1'  WHERE `num_pedido`='".$num_pedido."'")or die("error no update status agendamento");  
 			
-			$sqls = mysqli_query($con,"select logotipo from homologacao_ag.transportadora_ag where CNPJ = '".$cnpj_transp."'")or die ("error no select do upload logotipo");
+			$sqls = mysqli_query($con,"select logotipo from sistemas_ag.transportadora_ag where CNPJ = '".$cnpj_transp."'")or die ("error no select do upload logotipo");
 			   $rows2 = mysqli_num_rows($sqls);
 			
 					if($rows2 == 0){
-						$adiciona = mysqli_query($con,"INSERT INTO homologacao_ag.transportadora_ag (CNPJ,NOME,CEP,RUA,NUMERO,BAIRRO,CIDADE,UF,TELEFONE,EMAIL, logotipo) 
+						$adiciona = mysqli_query($con,"INSERT INTO sistemas_ag.transportadora_ag (CNPJ,NOME,CEP,RUA,NUMERO,BAIRRO,CIDADE,UF,TELEFONE,EMAIL, logotipo) 
 						VALUES 
 						('$cnpj_transp','$nome_transp','$cep_transp','$end_transp', '$numero_transp','$bairro_transp','$cid_transp','$uf_transp','$tel_transp','$email_transp','') ");
 					}
@@ -2954,7 +2920,7 @@
 				
 		if($categoria === "1"){
 			$cliente = $cnpj;
-			$busca = mysqli_query($con,"select group_concat('''',cnpj_transp,'''') as cnpj_transp, cnpj_cli from homologacao_ag.cad_transp_ag where cnpj_cli = '".$cnpj."'")or die("erro no select busca cliente");
+			$busca = mysqli_query($con,"select group_concat('''',cnpj_transp,'''') as cnpj_transp, cnpj_cli from sistemas_ag.cad_transp_ag where cnpj_cli = '".$cnpj."'")or die("erro no select busca cliente");
 			$rows = mysqli_num_rows($busca);
 			if($rows > 0){
 				$cnpj_cli = mysqli_fetch_array($busca);
@@ -2962,7 +2928,7 @@
 			}
 		}else{
 			$cliente = "";
-			$busca = mysqli_query($con,"select group_concat('''',cnpj_cli,'''') as cnpj_cli from homologacao_ag.cad_transp_ag where cnpj_transp = '".$cnpj."'")or die("erro no select busca cliente");
+			$busca = mysqli_query($con,"select group_concat('''',cnpj_cli,'''') as cnpj_cli from sistemas_ag.cad_transp_ag where cnpj_transp = '".$cnpj."'")or die("erro no select busca cliente");
 			$rows = mysqli_num_rows($busca);
 			if($rows > 0){
 				$cnpj_cli = mysqli_fetch_array($busca);
@@ -3021,7 +2987,7 @@
 			
 		$sql = mysqli_query($con,"SELECT 
 								a.num_pedido as num_pedido,
-								(select group_concat(' ',nome_cli,' ') from homologacao_ag.coleta_ag where num_pedido = a.num_pedido group by num_pedido limit 1) nome_cli,
+								(select group_concat(' ',nome_cli,' ') from sistemas_ag.coleta_ag where num_pedido = a.num_pedido group by num_pedido limit 1) nome_cli,
 								a.nome_transp,
 								a.data_agenda,
 								a.nome_motor,
@@ -3040,23 +3006,23 @@
 								d.qtd_veiculos,
                                 protocolo
 							FROM
-								homologacao_ag.coleta_ag a
+								sistemas_ag.coleta_ag a
                                 inner join
-                                homologacao_ag.agendamento_hist b
+                                sistemas_ag.agendamento_hist b
                                 on a.num_pedido = b.num_pedido
                                 left join
-                                homologacao_ag.clientes_ag c
+                                sistemas_ag.clientes_ag c
                                 on a.num_pedido = c.num_pedido
 								left join
-                                homologacao_ag.agendamento_ag d
+                                sistemas_ag.agendamento_ag d
                                 on a.num_pedido = d.num_pedido
-							where  d.data <> '' and a.status = '".$stat."' and a.cnpj_transp in (".$pesq.") and a.cnpj_cli ".$search."
+							where  a.status = '".$stat."' and a.cnpj_transp in (".$pesq.") and a.cnpj_cli ".$search."
 							group by case when a.num_pedido like '%KIT%' then mid(a.num_pedido,1,POSITION('-KIT' in a.num_pedido)-1) else a.num_pedido end
 							ORDER BY LENGTH(a.num_pedido) , a.num_pedido ASC")or die("Erro do select de consultar coleta ".mysqli_error($con));
 							
 		$rows = mysqli_num_rows($sql);
         
-		$truncate = mysqli_query($con,"truncate homologacao_ag.lista_coleta")or die(mysqli_error($con));
+		$truncate = mysqli_query($con,"truncate sistemas_ag.lista_coleta")or die(mysqli_error($con));
 		if($rows > 0){
 			
 			
@@ -3108,7 +3074,7 @@
 				$pesq->execute();
 				$row = $pesq->fetch();
 				
-				$defeito = mysqli_query($con,"select problema, descricao from homologacao_ag.ordem_coleta where num_pedido in ('".$num_pedido."')")or die("erro no select de defeito");
+				$defeito = mysqli_query($con,"select problema, descricao from sistemas_ag.ordem_coleta where num_pedido in ('".$num_pedido."')")or die("erro no select de defeito");
 				$def = mysqli_fetch_array($defeito);
 				
 				if($row['STATUS'] == "FINALIZADO"){
@@ -3118,7 +3084,7 @@
 					
 					
 					
-					$insert = mysqli_query($con,"insert into homologacao_ag.lista_coleta 
+					$insert = mysqli_query($con,"insert into sistemas_ag.lista_coleta 
 													(
 														num_pedido, 
 														cnpj,
@@ -3186,7 +3152,7 @@
 													cnpj_transp,
 													documento,
 													data_vencida
-												  from homologacao_ag.lista_coleta
+												  from sistemas_ag.lista_coleta
 												  	where cnpj = '".$codigoId."'
 													and status = '".$stat."'
 													group by num_pedido
@@ -3217,7 +3183,7 @@
 													cnpj_transp,
 													documento,
 													data_vencida
-												  from homologacao_ag.lista_coleta
+												  from sistemas_ag.lista_coleta
 												  	where cnpj = '".$codigoId."'
 													and status = '".$stat."'
 													group by num_pedido
@@ -3256,7 +3222,7 @@
 		   $num_pedido = $pedido;	
 		}
 		
-		$corrigir = mysqli_query($con,"UPDATE `homologacao_ag`.`coleta_ag` SET nome_transp='".strtoupper($transp)."', cnpj_transp='$cnpj', nome_motor='".strtoupper($motor)."', cpf_motor='$cpf', documento_motor='$doc', cnh_motor='".strtoupper($cnh)."', data_validade='$dataVencida', placa='".strtoupper($cavalo)."', pl_carreta='".strtoupper($carreta)."', pl_bitrem='".strtoupper($bitrem)."', pl_container='".strtoupper($container)."', `status`='$status' WHERE `num_pedido`like '%$num_pedido%';")or die("error na update corrigir");
+		$corrigir = mysqli_query($con,"UPDATE `sistemas_ag`.`coleta_ag` SET nome_transp='".strtoupper($transp)."', cnpj_transp='$cnpj', nome_motor='".strtoupper($motor)."', cpf_motor='$cpf', documento_motor='$doc', cnh_motor='".strtoupper($cnh)."', data_validade='$dataVencida', placa='".strtoupper($cavalo)."', pl_carreta='".strtoupper($carreta)."', pl_bitrem='".strtoupper($bitrem)."', pl_container='".strtoupper($container)."', `status`='$status' WHERE `num_pedido`like '%$num_pedido%';")or die("error na update corrigir");
 		
 		if($corrigir){
 			echo "1";
