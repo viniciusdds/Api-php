@@ -1135,8 +1135,8 @@
 												  from homologacao_ag.clientes_ag where cnpj = '".$cnpj."' and (palete <> '--' or troca = 'V')");
 			$resSaldoPalete = mysqli_fetch_array($verSaldoPalete);
 			
-			if($resSaldoPalete['produtos'] != '--' || $resSaldoPalete['notas'] != '--'){
-				$filtro = " and produto not in (".$resSaldoPalete['produtos'].") ";
+			if($resSaldoPalete['produtos'] != '--' && $resSaldoPalete['notas'] != '--'){
+				$filtro = " and produto not in (".$resSaldoPalete['produtos'].")";
 			}else{
 				$filtro = "";
 			}
