@@ -1628,6 +1628,12 @@
 		$nivel = $_REQUEST['perfil'];
         $cnpj = $_REQUEST['cnpj'];
 		$db_data = array();
+		
+		if($nivel == '2'){
+			$consClient = mysqli_query($con,"select cnpj_cli from homologacao_ag.cad_transp_ag where cnpj_transp = '".$cnpj."' group by cnpj_transp")or die(mysqli_error($con));
+			$resClient = mysqli_fetch_array($consClient);
+			$cnpj = $resClient['cnpj_cli'];
+		}
 
 		$sql = mysqli_query($con,"SELECT 
     						 distinct a.num_pedido
@@ -1635,7 +1641,9 @@
     						 homologacao_ag.clientes_ag a
         						LEFT JOIN
     						 homologacao_ag.veiculos_ag b ON a.num_pedido = b.num_pedido
-    						 where a.status = '2' 
+							 	LEFT JOIN
+							 homologacao_ag.agendamento_ag c ON c.num_pedido = a.num_pedido
+    						 where a.status = '2' and c.data is null
 							 and a.num_pedido not like '%.%' 
                              and a.num_pedido not like '%-%'
 							 and a.cnpj = '".$cnpj."' and b.num_pedido is null")or die(mysqli_error($con));		
