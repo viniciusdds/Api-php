@@ -668,10 +668,11 @@
 			$db_data = array();
 			
 			$verSaldoPalete = mysqli_query($con,"select 
-													case when group_concat('''',produto,'''') is null then 
+													case when group_concat(distinct '''',produto,'''') is null then 
 														'--' 
-													else group_concat('''',produto,'''') end produtos 
-												from homologacao_ag.clientes_ag where cnpj = '".$cnpj."' and palete = '--' and qtd_disp = pedido");
+													else group_concat(distinct '''',produto,'''') end produtos
+												from homologacao_ag.clientes_ag a where cnpj = '".$cnpj."' and 
+   													(select sum(pedido) from homologacao_ag.clientes_ag where cnpj = '".$cnpj."' and a.nota_fiscal = nota_fiscal and a.produto = produto ) = qtd_disp");
 			$resSaldoPalete = mysqli_fetch_array($verSaldoPalete);
 			
 			
