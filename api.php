@@ -416,9 +416,9 @@
 		}else{
 			if($rowsPER > 0){
 				//JÁ CADASTRADO	
-				echo "2";
-			}else{
 				echo "3";
+			}else{
+				echo "2";
 			}
 		}	
 	}
