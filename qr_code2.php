@@ -9,6 +9,7 @@
 		<?php 
 			$aux = 'qr_img/php/qr_img.php?';
 			$aux .= 'd=http://10.101.10.22:8080/camera/AuroraEadi.apk&';
+			//$aux .= 'd=http://10.101.10.22:8080/camera/WebView.apk&';
 			$aux .= 'e=H&';
 			$aux .= 's=2&';
 			$aux .= 't=P&';

@@ -2520,14 +2520,17 @@
 		}	
 				
 			$total = mysqli_query($con,"select 
-											num_pedido,
-											data,
+											a.num_pedido,
+											a.data,
 											group_concat(' ',a.cnpj_cli,' ') cnpj_cli,
 	                                        group_concat(' ',a.nome_cli,' ') nome_cli,
 											a.email_cli,
 											a.cnpj_transp
 										  from homologacao_ag.agendamento_ag a 
-										  where status <> '1' $attech1 $attech2 group by num_pedido")or die("erro do select busca agenda total ".mysqli_error($con));	
+										  			left join 
+											   homologacao_ag.coleta_ag b
+                                            		on a.num_pedido = b.num_pedido
+										  where (b.status = 'L' or b.status is null) and a.status <> '1' $attech1 $attech2 group by a.num_pedido")or die("erro do select busca agenda total ".mysqli_error($con));	
 				
 			$linhas = mysqli_num_rows($total);
 			if($linhas > 0){
