@@ -4,15 +4,15 @@
 		
 		if($categoria == "1"){
 				//Perfil Cliente
-				$buscaTransp = mysqli_query($con,"SELECT * FROM sistemas_ag.cad_transp_ag where cnpj_cli = '".$cnpj."'")or die("erro no select buscaTransp");
+				$buscaTransp = mysqli_query($con,"SELECT * FROM homologacao_ag.cad_transp_ag where cnpj_cli = '".$cnpj."'")or die("erro no select buscaTransp");
 						
 				$vinculo = mysqli_num_rows($buscaTransp);
 					
 				$when = " = '".$cnpj."'";
 				$inner = " = '".$cnpj."'";
 				
-				$limpa = mysqli_query($con,"truncate sistemas_ag.lista_gerado")or die(mysqli_error($con));
-				$verCont = mysqli_query($con,"select count(*) contLine, num_pedido from sistemas_ag.clientes_ag where num_pedido like '%.%' and num_pedido like '%-%' and palete != '--' and cnpj = '".$cnpj."'")or die("erro no select verCont");
+				$limpa = mysqli_query($con,"truncate homologacao_ag.lista_gerado")or die(mysqli_error($con));
+				$verCont = mysqli_query($con,"select count(*) contLine, num_pedido from homologacao_ag.clientes_ag where num_pedido like '%.%' and num_pedido like '%-%' and palete != '--' and cnpj = '".$cnpj."'")or die("erro no select verCont");
 				$resCont = mysqli_fetch_array($verCont);
 							
 			   //Consulta do pedido gerados pelo cliente
@@ -28,7 +28,7 @@
 								  			    when sum(qtd_disp) = (qtd_composto) then 0
 												else
 												    coalesce(sum(pedido),0) end soma 
-												    from sistemas_ag.clientes_ag where nota_fiscal = a.nota_fiscal and produto = a.produto and lote = a.lote)
+												    from homologacao_ag.clientes_ag where nota_fiscal = a.nota_fiscal and produto = a.produto and lote = a.lote)
 												then  
 													qtd_disp - qtd_disp
 												else 
@@ -37,7 +37,7 @@
 																			when sum(qtd_disp) = (qtd_composto) then qtd_disp
 																			else
 																			coalesce(sum(pedido),0) end soma
-																		from sistemas_ag.clientes_ag where nota_fiscal = a.nota_fiscal 
+																		from homologacao_ag.clientes_ag where nota_fiscal = a.nota_fiscal 
 																									 and produto = a.produto 
 																									 and lote = a.lote) 
 														end qtd_disp,
@@ -47,25 +47,25 @@
 														
 														-- Condição para pegar a quantidade pedida   
 														case when a.num_pedido like '%-%' and a.num_pedido like '%.%' 
-														and qtd_disp = ((SELECT sum(pedido) FROM sistemas_ag.clientes_ag where palete != '--' 
+														and qtd_disp = ((SELECT sum(pedido) FROM homologacao_ag.clientes_ag where palete != '--' 
 														and palete = a.palete and nota_fiscal = a.nota_fiscal and produto = a.produto 
 														group by lote,nota_fiscal,produto))
-														and palete <> '--' and  (select count(*) c from sistemas_ag.clientes_ag 
+														and palete <> '--' and  (select count(*) c from homologacao_ag.clientes_ag 
 														where palete <> '--' and nota_fiscal = a.nota_fiscal and produto = a.produto group by nota_fiscal, produto, num_pedido order by c desc limit 1)
-														= count(a.num_pedido)   and (select count(*) c from sistemas_ag.clientes_ag 
-														where palete <> '--' and produto = a.produto and nota_fiscal = a.nota_fiscal and num_pedido = a.num_pedido  group by nota_fiscal, produto) =  (select totalUZ from sistemas_ag.clientes_ag 
+														= count(a.num_pedido)   and (select count(*) c from homologacao_ag.clientes_ag 
+														where palete <> '--' and produto = a.produto and nota_fiscal = a.nota_fiscal and num_pedido = a.num_pedido  group by nota_fiscal, produto) =  (select totalUZ from homologacao_ag.clientes_ag 
 														where palete <> '--' and produto = a.produto and nota_fiscal = a.nota_fiscal   group by nota_fiscal, produto order by totalUZ desc limit 1)
 														or  
-														qtd_disp = ((SELECT sum(pedido) FROM sistemas_ag.clientes_ag where palete != '--' 
+														qtd_disp = ((SELECT sum(pedido) FROM homologacao_ag.clientes_ag where palete != '--' 
 														and palete = a.palete and nota_fiscal = a.nota_fiscal and produto = a.produto 
 														group by lote,nota_fiscal,produto))
-														and palete <> '--' and  (select count(*) c from sistemas_ag.clientes_ag 
+														and palete <> '--' and  (select count(*) c from homologacao_ag.clientes_ag 
 														where palete <> '--' and nota_fiscal = a.nota_fiscal and produto = a.produto group by nota_fiscal, produto, num_pedido order by c desc limit 1)
-														= count(a.num_pedido)   and (select count(*) c from sistemas_ag.clientes_ag 
-														where palete <> '--' and produto = a.produto and nota_fiscal = a.nota_fiscal and num_pedido = a.num_pedido  group by nota_fiscal, produto) =  (select totalUZ from sistemas_ag.clientes_ag 
+														= count(a.num_pedido)   and (select count(*) c from homologacao_ag.clientes_ag 
+														where palete <> '--' and produto = a.produto and nota_fiscal = a.nota_fiscal and num_pedido = a.num_pedido  group by nota_fiscal, produto) =  (select totalUZ from homologacao_ag.clientes_ag 
 														where palete <> '--' and produto = a.produto and nota_fiscal = a.nota_fiscal   group by nota_fiscal, produto order by totalUZ desc limit 1)
 														then
-															sum(pedido)  - (select sum(pedido) from sistemas_ag.clientes_ag where case when totalUZ is null 
+															sum(pedido)  - (select sum(pedido) from homologacao_ag.clientes_ag where case when totalUZ is null 
 															then palete = '--' else 0 end and nota_fiscal = a.nota_fiscal and produto = a.produto group by nota_fiscal,produto,lote)
 														else
 															 sum(pedido)
@@ -91,7 +91,7 @@
 														case when palete = '--' and a.cubagem = '0' then 'QT *' 
 														when a.cubagem = 0 and a.num_pedido not like '%-%' and a.num_pedido not like '%.%' then concat(cast(count(a.num_pedido) as char),' PP *') 
 														when a.cubagem = 0 and a.num_pedido like '%-%' and a.num_pedido like '%.%' and a.palete != '--' then '".$resCont['contLine']." PP *'
-														when (select count(*) from sistemas_ag.clientes_ag where palete <> '--' and
+														when (select count(*) from homologacao_ag.clientes_ag where palete <> '--' and
 														palete = a.palete group by palete) > 1 
 														then
 														concat(cast(count(a.num_pedido) as char),' PP *') 
@@ -99,13 +99,13 @@
 														
 														b.cnpj_transp as cnpj_transp,
 														case when 
-														(select count(*) from sistemas_ag.clientes_ag where forma = 'TUDO' 
+														(select count(*) from homologacao_ag.clientes_ag where forma = 'TUDO' 
 															and nota_fiscal = a.nota_fiscal
 														) > 0  then 0 else (qtd_disp - max(qtd_composto))  end as sobra,
 														totalUZ as totalUZ
 													from
-														sistemas_ag.clientes_ag a left join
-														sistemas_ag.agendamento_ag b on a.num_pedido = b.num_pedido
+														homologacao_ag.clientes_ag a left join
+														homologacao_ag.agendamento_ag b on a.num_pedido = b.num_pedido
 													where 
 														cnpj ".$when." and 
 														(a.num_pedido like '%".$busca."%'
@@ -121,11 +121,11 @@
 														produto,
 														
 														-- Pegar a quantidade disponivel
-														case when qtd_disp = (select sum(pedido) from sistemas_ag.clientes_ag where nota_fiscal = a.nota_fiscal and produto = a.produto and lote = a.lote)
+														case when qtd_disp = (select sum(pedido) from homologacao_ag.clientes_ag where nota_fiscal = a.nota_fiscal and produto = a.produto and lote = a.lote)
 														then  
 															qtd_disp - qtd_disp
 														else 
-															qtd_disp - (select sum(pedido) from sistemas_ag.clientes_ag where nota_fiscal = a.nota_fiscal and produto = a.produto and lote = a.lote) 
+															qtd_disp - (select sum(pedido) from homologacao_ag.clientes_ag where nota_fiscal = a.nota_fiscal and produto = a.produto and lote = a.lote) 
 														end qtd_disp,
 														
 														lote,
@@ -133,28 +133,28 @@
 														
 														-- Condição para pegar a quantidade pedida   
 														case when a.num_pedido like '%-%' and a.num_pedido like '%.%' 
-														and qtd_disp = ((SELECT sum(pedido) FROM sistemas_ag.clientes_ag where palete != '--' 
+														and qtd_disp = ((SELECT sum(pedido) FROM homologacao_ag.clientes_ag where palete != '--' 
 														and palete = a.palete and nota_fiscal = a.nota_fiscal and produto = a.produto 
 														group by lote,nota_fiscal,produto))
-														and palete <> '--' and  (select count(*) c from sistemas_ag.clientes_ag 
+														and palete <> '--' and  (select count(*) c from homologacao_ag.clientes_ag 
 														where palete <> '--' and nota_fiscal = a.nota_fiscal and produto = a.produto group by nota_fiscal, produto, num_pedido order by c desc limit 1)
-														= count(a.num_pedido)   and (select count(*) c from sistemas_ag.clientes_ag 
-														where palete <> '--' and produto = a.produto and nota_fiscal = a.nota_fiscal and num_pedido = a.num_pedido  group by nota_fiscal, produto) =  (select totalUZ from sistemas_ag.clientes_ag 
+														= count(a.num_pedido)   and (select count(*) c from homologacao_ag.clientes_ag 
+														where palete <> '--' and produto = a.produto and nota_fiscal = a.nota_fiscal and num_pedido = a.num_pedido  group by nota_fiscal, produto) =  (select totalUZ from homologacao_ag.clientes_ag 
 														where palete <> '--' and produto = a.produto and nota_fiscal = a.nota_fiscal   group by nota_fiscal, produto order by totalUZ desc limit 1)
 														or 
-														qtd_disp = ((SELECT sum(pedido) FROM sistemas_ag.clientes_ag where palete != '--' 
+														qtd_disp = ((SELECT sum(pedido) FROM homologacao_ag.clientes_ag where palete != '--' 
 														and palete = a.palete and nota_fiscal = a.nota_fiscal and produto = a.produto 
 														group by lote,nota_fiscal,produto))
-														and palete <> '--' and  (select count(*) c from sistemas_ag.clientes_ag 
+														and palete <> '--' and  (select count(*) c from homologacao_ag.clientes_ag 
 														where palete <> '--' and nota_fiscal = a.nota_fiscal and produto = a.produto group by nota_fiscal, produto, num_pedido order by c desc limit 1)
-														= count(a.num_pedido)   and (select count(*) c from sistemas_ag.clientes_ag 
-														where palete <> '--' and produto = a.produto and nota_fiscal = a.nota_fiscal and num_pedido = a.num_pedido  group by nota_fiscal, produto) =  (select totalUZ from sistemas_ag.clientes_ag 
+														= count(a.num_pedido)   and (select count(*) c from homologacao_ag.clientes_ag 
+														where palete <> '--' and produto = a.produto and nota_fiscal = a.nota_fiscal and num_pedido = a.num_pedido  group by nota_fiscal, produto) =  (select totalUZ from homologacao_ag.clientes_ag 
 														where palete <> '--' and produto = a.produto and nota_fiscal = a.nota_fiscal   group by nota_fiscal, produto order by totalUZ desc limit 1)
 														then
-															sum(pedido)  - (select sum(pedido) from sistemas_ag.clientes_ag where case when totalUZ is null 
+															sum(pedido)  - (select sum(pedido) from homologacao_ag.clientes_ag where case when totalUZ is null 
 															then palete = '--' else 0 end and nota_fiscal = a.nota_fiscal and produto = a.produto group by nota_fiscal,produto,lote)
 														else
-															(select  sum(pedido) from sistemas_ag.clientes_ag where num_pedido = a.num_pedido and nota_fiscal = a.nota_fiscal and produto = a.produto and lote = a.lote group by lote )
+															(select  sum(pedido) from homologacao_ag.clientes_ag where num_pedido = a.num_pedido and nota_fiscal = a.nota_fiscal and produto = a.produto and lote = a.lote group by lote )
 														end as pedido,
 														
 														a.status,
@@ -175,7 +175,7 @@
 														
 														-- pegar quantidade de palete mais o tipo de cubagem
 														case when palete = '--' and a.cubagem = '0' 
-														and (SELECT count(*) FROM sistemas_ag.clientes_ag where num_pedido = a.num_pedido and length(palete) > 2) = 0
+														and (SELECT count(*) FROM homologacao_ag.clientes_ag where num_pedido = a.num_pedido and length(palete) > 2) = 0
 														then 
 															'QT *' 
 														when a.cubagem = 0 and a.num_pedido not like '%-%' and a.num_pedido not like '%.%' 
@@ -184,20 +184,20 @@
 														when a.cubagem = 0 and a.num_pedido like '%-%' and a.num_pedido like '%.%' and a.palete != '--' 
 														then 
 															'".$resCont['contLine']." PP *' 
-														when (select count(*) from sistemas_ag.clientes_ag where palete <> '--' and
+														when (select count(*) from homologacao_ag.clientes_ag where palete <> '--' and
 														palete = a.palete group by palete) > 1
 														then
 															concat(cast(count(a.num_pedido) as char),' PP *') 
 														else concat('QG: ',cast(count(a.num_pedido) as char),' | ',sum(a.cubagem)) end,
 														
 														b.cnpj_transp,
-														case when (select count(*) from sistemas_ag.clientes_ag where forma = 'TUDO' 
+														case when (select count(*) from homologacao_ag.clientes_ag where forma = 'TUDO' 
 															and nota_fiscal = a.nota_fiscal
 														) > 0  then 0 else (qtd_disp - max(qtd_composto))  end as sobra,
 														totalUZ as totalUZ
 													from
-														sistemas_ag.clientes_ag a left join
-														sistemas_ag.agendamento_ag b on a.num_pedido = b.num_pedido
+														homologacao_ag.clientes_ag a left join
+														homologacao_ag.agendamento_ag b on a.num_pedido = b.num_pedido
 													where 
 														cnpj ".$when." and 
 														(a.num_pedido like '%".$busca."%'
@@ -214,10 +214,10 @@
 							$truck = mysqli_query($con,"SELECT case when count(*) = 1 then group_concat('''',cnpj_cli,'''')
 															   else group_concat('''',cnpj_cli,'''') end as cliente_id, 
 																case when permissao is null then '0' else permissao end permissao
-														 FROM sistemas_ag.cad_transp_ag where cnpj_transp = '".$cnpj."'")or die("erro no select truck");
+														 FROM homologacao_ag.cad_transp_ag where cnpj_transp = '".$cnpj."'")or die("erro no select truck");
 							$request = mysqli_fetch_array($truck);
 							
-							$verifTransp = mysqli_query($con,"select case when group_concat('''',cnpj_cli,'''') is null then concat('''''') else group_concat('''',cnpj_cli,'''') end clientes, permissao from sistemas_ag.cad_transp_ag where cnpj_transp  = '".$cnpj."' and permissao = '1'")or die("erro no select verifTransp");
+							$verifTransp = mysqli_query($con,"select case when group_concat('''',cnpj_cli,'''') is null then concat('''''') else group_concat('''',cnpj_cli,'''') end clientes, permissao from homologacao_ag.cad_transp_ag where cnpj_transp  = '".$cnpj."' and permissao = '1'")or die("erro no select verifTransp");
 							
 							$permitido = mysqli_fetch_array($verifTransp);
 							
@@ -231,7 +231,7 @@
 							}
 							
 							
-							$verCont = mysqli_query($con,"select count(*) contLine, num_pedido from sistemas_ag.clientes_ag where num_pedido like '%.%' and num_pedido like '%-%' and palete != '--' and cnpj ".$inner." ")or die("erro no select verCont");
+							$verCont = mysqli_query($con,"select count(*) contLine, num_pedido from homologacao_ag.clientes_ag where num_pedido like '%.%' and num_pedido like '%-%' and palete != '--' and cnpj ".$inner." ")or die("erro no select verCont");
 							$resCont = mysqli_fetch_array($verCont);
 							
 							//Consulta do pedido gerados pelo cliente
@@ -242,11 +242,11 @@
 														produto as produto,
 														
 														-- Pegar a quantidade disponivel
-														case when qtd_disp = (select sum(pedido) from sistemas_ag.clientes_ag where nota_fiscal = a.nota_fiscal and produto = a.produto and lote = a.lote)
+														case when qtd_disp = (select sum(pedido) from homologacao_ag.clientes_ag where nota_fiscal = a.nota_fiscal and produto = a.produto and lote = a.lote)
 														then  
 															qtd_disp - qtd_disp
 														else 
-															qtd_disp - (select sum(pedido) from sistemas_ag.clientes_ag where nota_fiscal = a.nota_fiscal and produto = a.produto and lote = a.lote) 
+															qtd_disp - (select sum(pedido) from homologacao_ag.clientes_ag where nota_fiscal = a.nota_fiscal and produto = a.produto and lote = a.lote) 
 														end qtd_disp,
 														
 														lote as lote,
@@ -254,26 +254,26 @@
 
 														-- Condição para pegar a quantidade pedida   
 														case when a.num_pedido like '%-%' and a.num_pedido like '%.%' 
-														and qtd_disp = ((SELECT sum(pedido) FROM sistemas_ag.clientes_ag where palete != '--' 
+														and qtd_disp = ((SELECT sum(pedido) FROM homologacao_ag.clientes_ag where palete != '--' 
 														and palete = a.palete and nota_fiscal = a.nota_fiscal and produto = a.produto 
 														group by lote,nota_fiscal,produto))
-														and palete <> '--' and  (select count(*) c from sistemas_ag.clientes_ag 
+														and palete <> '--' and  (select count(*) c from homologacao_ag.clientes_ag 
 														where palete <> '--' and nota_fiscal = a.nota_fiscal and produto = a.produto group by nota_fiscal, produto, num_pedido order by c desc limit 1)
-														= count(a.num_pedido)   and (select count(*) c from sistemas_ag.clientes_ag 
-														where palete <> '--' and produto = a.produto and nota_fiscal = a.nota_fiscal and num_pedido = a.num_pedido  group by nota_fiscal, produto) =  (select totalUZ from sistemas_ag.clientes_ag 
+														= count(a.num_pedido)   and (select count(*) c from homologacao_ag.clientes_ag 
+														where palete <> '--' and produto = a.produto and nota_fiscal = a.nota_fiscal and num_pedido = a.num_pedido  group by nota_fiscal, produto) =  (select totalUZ from homologacao_ag.clientes_ag 
 														where palete <> '--' and produto = a.produto and nota_fiscal = a.nota_fiscal   group by nota_fiscal, produto order by totalUZ desc limit 1)
-														or qtd_disp = ((SELECT sum(pedido) FROM sistemas_ag.clientes_ag where palete != '--' 
+														or qtd_disp = ((SELECT sum(pedido) FROM homologacao_ag.clientes_ag where palete != '--' 
 														and palete = a.palete and nota_fiscal = a.nota_fiscal and produto = a.produto 
-														group by lote,nota_fiscal,produto)) and palete <> '--' and  (select count(*) c from sistemas_ag.clientes_ag 
+														group by lote,nota_fiscal,produto)) and palete <> '--' and  (select count(*) c from homologacao_ag.clientes_ag 
 														where palete <> '--' and nota_fiscal = a.nota_fiscal and produto = a.produto group by nota_fiscal, produto, num_pedido order by c desc limit 1)
-														= count(a.num_pedido)   and (select count(*) c from sistemas_ag.clientes_ag 
-														where palete <> '--' and produto = a.produto and nota_fiscal = a.nota_fiscal and num_pedido = a.num_pedido  group by nota_fiscal, produto) =  (select totalUZ from sistemas_ag.clientes_ag 
+														= count(a.num_pedido)   and (select count(*) c from homologacao_ag.clientes_ag 
+														where palete <> '--' and produto = a.produto and nota_fiscal = a.nota_fiscal and num_pedido = a.num_pedido  group by nota_fiscal, produto) =  (select totalUZ from homologacao_ag.clientes_ag 
 														where palete <> '--' and produto = a.produto and nota_fiscal = a.nota_fiscal   group by nota_fiscal, produto order by totalUZ desc limit 1)
 														then
-															sum(pedido)  - (select sum(pedido) from sistemas_ag.clientes_ag where case when totalUZ is null 
+															sum(pedido)  - (select sum(pedido) from homologacao_ag.clientes_ag where case when totalUZ is null 
 															then palete = '--' else 0 end and nota_fiscal = a.nota_fiscal and produto = a.produto group by nota_fiscal,produto,lote)
 														else
-															(select  sum(pedido) from sistemas_ag.clientes_ag where num_pedido = a.num_pedido and nota_fiscal = a.nota_fiscal and produto = a.produto and lote = a.lote group by lote)
+															(select  sum(pedido) from homologacao_ag.clientes_ag where num_pedido = a.num_pedido and nota_fiscal = a.nota_fiscal and produto = a.produto and lote = a.lote group by lote)
 														end as pedido,
 									
 									
@@ -294,7 +294,7 @@
 														b.timestamp as timestamp,
 														
 														case when palete = '--' and a.cubagem = '0' 
-														and (SELECT count(*) FROM sistemas_ag.clientes_ag where num_pedido = a.num_pedido and length(palete) > 2) = 0
+														and (SELECT count(*) FROM homologacao_ag.clientes_ag where num_pedido = a.num_pedido and length(palete) > 2) = 0
 														then 
 															'QT *' 
 														when a.cubagem = 0 and a.num_pedido not like '%-%' and a.num_pedido not like '%.%' 
@@ -303,7 +303,7 @@
 														when a.cubagem = 0 and a.num_pedido like '%-%' and a.num_pedido like '%.%' and a.palete != '--' 
 														then 
 															'".$resCont['contLine']." PP *'
-														when (select count(*) from sistemas_ag.clientes_ag where palete <> '--' and
+														when (select count(*) from homologacao_ag.clientes_ag where palete <> '--' and
 														palete = a.palete group by palete) > 1
 														then
 															concat(cast(count(a.num_pedido) as char),' PP *') 									
@@ -311,8 +311,8 @@
 														
 														case when b.cnpj_transp is null then '0' else b.cnpj_transp end as cnpj_transp
 													from
-														sistemas_ag.clientes_ag a left join
-														sistemas_ag.agendamento_ag b on a.num_pedido = b.num_pedido
+														homologacao_ag.clientes_ag a left join
+														homologacao_ag.agendamento_ag b on a.num_pedido = b.num_pedido
 													where 
 														cnpj ".$when." and 
 														(a.num_pedido like '%".$busca."%'
@@ -328,11 +328,11 @@
 														produto,
 														
 														-- Pegar a quantidade disponivel
-														case when qtd_disp = (select sum(pedido) from sistemas_ag.clientes_ag where nota_fiscal = a.nota_fiscal and produto = a.produto and lote = a.lote)
+														case when qtd_disp = (select sum(pedido) from homologacao_ag.clientes_ag where nota_fiscal = a.nota_fiscal and produto = a.produto and lote = a.lote)
 														then  
 															qtd_disp - qtd_disp
 														else 
-															qtd_disp - (select sum(pedido) from sistemas_ag.clientes_ag where nota_fiscal = a.nota_fiscal and produto = a.produto and lote = a.lote) 
+															qtd_disp - (select sum(pedido) from homologacao_ag.clientes_ag where nota_fiscal = a.nota_fiscal and produto = a.produto and lote = a.lote) 
 														end qtd_disp,
 														
 														lote,
@@ -340,25 +340,25 @@
 														
 														-- Condição para pegar a quantidade pedida   
 														case when a.num_pedido like '%-%' and a.num_pedido like '%.%' 
-														and qtd_disp = ((SELECT sum(pedido) FROM sistemas_ag.clientes_ag where palete != '--' 
+														and qtd_disp = ((SELECT sum(pedido) FROM homologacao_ag.clientes_ag where palete != '--' 
 														and palete = a.palete and nota_fiscal = a.nota_fiscal and produto = a.produto 
 														group by lote,nota_fiscal,produto))
-														and palete <> '--' and  (select count(*) c from sistemas_ag.clientes_ag 
+														and palete <> '--' and  (select count(*) c from homologacao_ag.clientes_ag 
 														where palete <> '--' and nota_fiscal = a.nota_fiscal and produto = a.produto group by nota_fiscal, produto, num_pedido order by c desc limit 1)
-														= count(a.num_pedido)   and (select count(*) c from sistemas_ag.clientes_ag 
-														where palete <> '--' and produto = a.produto and nota_fiscal = a.nota_fiscal and num_pedido = a.num_pedido  group by nota_fiscal, produto) =  (select totalUZ from sistemas_ag.clientes_ag 
+														= count(a.num_pedido)   and (select count(*) c from homologacao_ag.clientes_ag 
+														where palete <> '--' and produto = a.produto and nota_fiscal = a.nota_fiscal and num_pedido = a.num_pedido  group by nota_fiscal, produto) =  (select totalUZ from homologacao_ag.clientes_ag 
 														where palete <> '--' and produto = a.produto and nota_fiscal = a.nota_fiscal   group by nota_fiscal, produto order by totalUZ desc limit 1)
 														or  
-														qtd_disp = ((SELECT sum(pedido) FROM sistemas_ag.clientes_ag where palete != '--' 
+														qtd_disp = ((SELECT sum(pedido) FROM homologacao_ag.clientes_ag where palete != '--' 
 														and palete = a.palete and nota_fiscal = a.nota_fiscal and produto = a.produto 
 														group by lote,nota_fiscal,produto))
-														and palete <> '--' and  (select count(*) c from sistemas_ag.clientes_ag 
+														and palete <> '--' and  (select count(*) c from homologacao_ag.clientes_ag 
 														where palete <> '--' and nota_fiscal = a.nota_fiscal and produto = a.produto group by nota_fiscal, produto, num_pedido order by c desc limit 1)
-														= count(a.num_pedido)   and (select count(*) c from sistemas_ag.clientes_ag 
-														where palete <> '--' and produto = a.produto and nota_fiscal = a.nota_fiscal and num_pedido = a.num_pedido  group by nota_fiscal, produto) =  (select totalUZ from sistemas_ag.clientes_ag 
+														= count(a.num_pedido)   and (select count(*) c from homologacao_ag.clientes_ag 
+														where palete <> '--' and produto = a.produto and nota_fiscal = a.nota_fiscal and num_pedido = a.num_pedido  group by nota_fiscal, produto) =  (select totalUZ from homologacao_ag.clientes_ag 
 														where palete <> '--' and produto = a.produto and nota_fiscal = a.nota_fiscal   group by nota_fiscal, produto order by totalUZ desc limit 1)
 														then
-															sum(pedido)  - (select sum(pedido) from sistemas_ag.clientes_ag where case when totalUZ is null 
+															sum(pedido)  - (select sum(pedido) from homologacao_ag.clientes_ag where case when totalUZ is null 
 															then palete = '--' else 0 end and nota_fiscal = a.nota_fiscal and produto = a.produto group by nota_fiscal,produto,lote)
 														else
 															 sum(pedido)
@@ -383,7 +383,7 @@
 														case when palete = '--' and a.cubagem = '0' then 'QT *' 
 														when a.cubagem = 0 and a.num_pedido not like '%-%' and a.num_pedido not like '%.%' then concat(cast(count(a.num_pedido) as char),' PP *') 
 														when a.cubagem = 0 and a.num_pedido like '%-%' and a.num_pedido like '%.%' and a.palete != '--' then '".$resCont['contLine']." PP *' 
-														when (select count(*) from sistemas_ag.clientes_ag where palete <> '--' and
+														when (select count(*) from homologacao_ag.clientes_ag where palete <> '--' and
 														palete = a.palete group by palete) > 1
 														then
 														concat(cast(count(a.num_pedido) as char),' PP *') 
@@ -391,8 +391,8 @@
 														
 														case when b.cnpj_transp is null then '0' else b.cnpj_transp end
 													from
-														sistemas_ag.clientes_ag a left join
-														sistemas_ag.agendamento_ag b on a.num_pedido = b.num_pedido
+														homologacao_ag.clientes_ag a left join
+														homologacao_ag.agendamento_ag b on a.num_pedido = b.num_pedido
 													where 
 														cnpj ".$when." and 
 														(a.num_pedido like '%".$busca."%'
@@ -408,7 +408,7 @@
 									//Aqui verifico as permissões do pedidos com agendamento
 									$buscaPermissao1 = mysqli_query($con,"select 
 																			a.num_pedido
-																		from sistemas_ag.agendamento_ag a
+																		from homologacao_ag.agendamento_ag a
 																			where a.cnpj_cli in (".$request['cliente_id'].")
 																				  and case when cnpj_transp = '' then a.cnpj_cli in (".$permitido['clientes'].") else a.cnpj_transp end
 																				  and a.cnpj_transp in ('".$cnpj."','') 
@@ -427,9 +427,9 @@
 									//Aqui verifico as permissões do pedidos sem agendamento
 									$buscaPermissao2 = mysqli_query($con,"SELECT 
 																				b.num_pedido 
-																			FROM sistemas_ag.cad_transp_ag a inner join sistemas_ag.clientes_ag b
+																			FROM homologacao_ag.cad_transp_ag a inner join homologacao_ag.clientes_ag b
 																			on a.cnpj_cli = b.cnpj 
-																			left join sistemas_ag.agendamento_ag c
+																			left join homologacao_ag.agendamento_ag c
 																			on b.num_pedido = c.num_pedido
 																			where a.cnpj_transp = '".$cnpj."' and permissao = '1' and c.cnpj_transp is null")or die("erro no select buscaPermissao2");
 																			
@@ -503,7 +503,7 @@
 							}else{
 								
 								//Verifica se o veiculo foi checado pelo cliente
-								$buscaVeiculo = mysqli_query($con,"select * from sistemas_ag.veiculos_ag where (id_veiculo = '".$result->num_pedido."' or num_pedido = '".$result->num_pedido."')")or die("erro no select busca veiculo");
+								$buscaVeiculo = mysqli_query($con,"select * from homologacao_ag.veiculos_ag where (id_veiculo = '".$result->num_pedido."' or num_pedido = '".$result->num_pedido."')")or die("erro no select busca veiculo");
 								$linhasVeiculo = mysqli_num_rows($buscaVeiculo);
 								$idVeiculo = mysqli_fetch_array($buscaVeiculo);
 									
@@ -511,7 +511,7 @@
 								if($pos == ""){
 									
 									//Aqui recupero o item pai para pegar a quantidade total
-									$itemsCompostos = mysqli_query($con,"SELECT composto FROM sistemas_ag.itens_composto where itens = '".$result->produto."' and nota = '".$result->nota_fiscal."'")or die("erro no select itemsComposto");
+									$itemsCompostos = mysqli_query($con,"SELECT composto FROM homologacao_ag.itens_composto where itens = '".$result->produto."' and nota = '".$result->nota_fiscal."'")or die("erro no select itemsComposto");
 									$itemPai = mysqli_fetch_array($itemsCompostos);
 						
 									$docit = $conAG->query("select 
@@ -537,13 +537,13 @@
 									//Aqui pego a quantidade disponivel
 									$itensCompostos = mysqli_query($con,"select 
 																				".$qtdComposto['QTD']." - max(qtd_composto) disp
-																				from sistemas_ag.clientes_ag where nota_fiscal = '".$result->nota_fiscal."'")or die("erro no select itensCompostos");
+																				from homologacao_ag.clientes_ag where nota_fiscal = '".$result->nota_fiscal."'")or die("erro no select itensCompostos");
 									
 									$verifyKIT = strpos($result->produto,"KIT");
 									$qtdCompostos = mysqli_fetch_array($itensCompostos);
 									
 									//Aqui eu pego a quantidade geral para trocar
-									$totaisPedidos = mysqli_query($con,"select qtd_pedida REST from sistemas_ag.qtd_composto where num_pedido = '".$result->num_pedido."' and nota_fiscal = '".$result->nota_fiscal."'")or die("erro no select totaisPedidos");
+									$totaisPedidos = mysqli_query($con,"select qtd_pedida REST from homologacao_ag.qtd_composto where num_pedido = '".$result->num_pedido."' and nota_fiscal = '".$result->nota_fiscal."'")or die("erro no select totaisPedidos");
 									$numeroPedidos = mysqli_num_rows($totaisPedidos);
 									if($numeroPedidos > 0){
 										$resultsPedidos = mysqli_fetch_array($totaisPedidos);
@@ -580,7 +580,7 @@
 													
 								
 																
-															$insere = mysqli_query($con,"insert into sistemas_ag.lista_gerado 
+															$insere = mysqli_query($con,"insert into homologacao_ag.lista_gerado 
 																								 (
 																									num_pedido,
 																									nota_fiscal,
@@ -630,7 +630,7 @@
 												}
 												
 													
-													$insere = mysqli_query($con,"insert into sistemas_ag.lista_gerado 
+													$insere = mysqli_query($con,"insert into homologacao_ag.lista_gerado 
 																							 (
 																								num_pedido,
 																								nota_fiscal,
@@ -670,7 +670,7 @@
 								}
 								
 								if($result->data != ""){
-									$removeAgendado = mysqli_query($con,"delete from sistemas_ag.lista_gerado where num_pedido = '".$result->num_pedido."'")or die(mysqli_error($con));
+									$removeAgendado = mysqli_query($con,"delete from homologacao_ag.lista_gerado where num_pedido = '".$result->num_pedido."'")or die(mysqli_error($con));
 								}
 							}// fim do else status finalizado Alcis
 				
@@ -683,7 +683,7 @@
 															group_concat(DISTINCT '(',nota_fiscal,' - ', produto,' - ', lote,'\n', cubagem,' - ', unid_medida,' - ', pedido,')\n\n' ORDER BY lote SEPARATOR '') infoES,
 															max(status) status,
 															data
-														from sistemas_ag.lista_gerado 
+														from homologacao_ag.lista_gerado 
 														where cnpj = '".$cnpj."'
 														and status <> '3'											
 														group by num_pedido");
@@ -694,7 +694,7 @@
 															group_concat(DISTINCT '(',nota_fiscal,' - ', produto,' - ', lote,'\n', cubagem,' - ', unid_medida,' - ', pedido,')\n\n' ORDER BY lote SEPARATOR '') infoES,
 															max(status) status,
 															data
-														from sistemas_ag.lista_gerado 
+														from homologacao_ag.lista_gerado 
 														where cnpj = '".$cnpj."'
 														and status = '2'											
 														group by num_pedido");
@@ -717,7 +717,7 @@
 	function sendEmail($pedidos, $processo){	
 		date_default_timezone_set('America/Recife');
 		require('PHPMailer/class.phpmailer.php');
-		$con = mysqli_connect("localhost","root","","sistemas_ag")or die("<h1>Error na conexão com banco mysql</h1>");
+		$con = mysqli_connect("localhost","root","","homologacao_ag")or die("<h1>Error na conexão com banco mysql</h1>");
 		mysqli_set_charset($con,"utf8");
 		//$con2 = mysqli_connect("localhost","adminwebsorocaba","VmtefuQffnq6T6US","agend_coleta")or die("<h1>Error ao conectar no banco agend_coleta</h1>");
 
@@ -733,9 +733,9 @@
 
 			$info = mysqli_query($con,"select 
 									*, date_format(timestamp, '%d-%m-%Y %H:%i:%s') time_date, a.nome_cli, count(*) linhas 
-								   from  sistemas_ag.agendamento_ag a
+								   from  homologacao_ag.agendamento_ag a
 										inner join
-										 sistemas_ag.clientes_ag b
+										 homologacao_ag.clientes_ag b
 										on a.num_pedido = b.num_pedido
 										where a.num_pedido like '%".$pedidos."%'
 										group by a.num_pedido, cnpj_cli")or die("erro no select e email");	
@@ -750,12 +750,12 @@
 					$ajudante = 'SIM';
 				}
 				
-				$historico = mysqli_query($con,"insert into sistemas_ag.agendamento_hist (num_pedido,cnpj,nome,protocolo,data,ajudante) values ('".$result->num_pedido."','".$result->cnpj_cli."','".$result->nome_cli."','".$protocolo."','".$result->data."','".$ajudante."') ON DUPLICATE KEY UPDATE cnpj = '".$result->cnpj_cli."', nome = '".$result->nome_cli."', protocolo = '".$protocolo."', data = '".$result->data."', time_stamp = now() ")or die("erro no historico do agendamento");
+				$historico = mysqli_query($con,"insert into homologacao_ag.agendamento_hist (num_pedido,cnpj,nome,protocolo,data,ajudante) values ('".$result->num_pedido."','".$result->cnpj_cli."','".$result->nome_cli."','".$protocolo."','".$result->data."','".$ajudante."') ON DUPLICATE KEY UPDATE cnpj = '".$result->cnpj_cli."', nome = '".$result->nome_cli."', protocolo = '".$protocolo."', data = '".$result->data."', time_stamp = now() ")or die("erro no historico do agendamento");
 			
 			
 				$nome=$result->nome_cli;
-				//$email=$result->email_cli;
-				$email="vinicius.santos@eadiaurora.com.br";
+				$email=$result->email_cli;
+				//$email="vinicius.santos@eadiaurora.com.br";
 				$subject = "AURORA TERMINAIS - AGENDAMENTO REALIZADO PARA O AG";
 				$mensagem = "<b style='color: #000080;'>AGENDAMENTO REALIZADO EM   ".$result->time_date."</b><br>";
 				$mensagem .= "<b>AGENDADO PARA:</b>&nbsp; <strong style='color: #000080;'>".$result->data."</strong><br>";
@@ -780,7 +780,7 @@
 				//$mail->Port=587;
 				//$mail->Host='smtp.eadiaurora.com.br';
 				$mail->Username='intranet_service@eadiaurora.com.br'; 
-				$mail->Password='!@Root@!'; 
+				$mail->Password='@e?L#r5M'; 
 				$mail->SetFrom('intranet_service@eadiaurora.com.br','AGENDAMENTO REALIZADO - ');
 				$mail->AddAddress($email,$nome);
 				//$mail->Addcc('atendimento@eadiaurora.com.br');
@@ -824,7 +824,7 @@
 												b.email_cli,
 												DATE_FORMAT(a.time_stamp, '%d-%m-%Y %H:%i:%s') time_date
 											FROM
-												sistemas_ag.agendamento_hist a
+												homologacao_ag.agendamento_hist a
 												inner join clientes_ag b
 												on a.num_pedido = b.num_pedido
 											WHERE
@@ -865,7 +865,7 @@
 					$mail->Host='mailssl.picture.com.br';
 					$mail->SMTPSecure = "ssl";
 					$mail->Username='intranet_service@eadiaurora.com.br'; 
-					$mail->Password='!@Root@!'; 
+					$mail->Password='@e?L#r5M'; 
 					$mail->SetFrom('intranet_service@eadiaurora.com.br','AGENDAMENTO ALTERADO - ');
 					$mail->AddAddress($email,$nome);
 					//$mail->Addcc('atendimento@eadiaurora.com.br');
@@ -905,7 +905,7 @@
 												b.email_cli,
 												DATE_FORMAT(a.time_stamp, '%d-%m-%Y %H:%i:%s') time_date
 											FROM
-												sistemas_ag.agendamento_hist a
+												homologacao_ag.agendamento_hist a
 												inner join clientes_ag b
 												on a.num_pedido = b.num_pedido
 											WHERE
@@ -947,7 +947,7 @@
 					//$mail->Port=587;
 					//$mail->Host='smtp.eadiaurora.com.br';
 					$mail->Username='intranet_service@eadiaurora.com.br'; 
-					$mail->Password='!@Root@!'; 
+					$mail->Password='@e?L#r5M'; 
 					$mail->SetFrom('intranet_service@eadiaurora.com.br','AGENDAMENTO REALIZADO - ');
 					$mail->AddAddress($email,$nome);
 					//$mail->Addcc('atendimento@eadiaurora.com.br');
